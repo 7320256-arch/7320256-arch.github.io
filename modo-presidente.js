@@ -415,7 +415,7 @@ function promote(id, silent) {
   const c = S().cantera, u = userClub(); const i = c.jugadores.findIndex(p => p.id === id); if (i < 0) return;
   if (u.plantilla.length >= 30) { if (!silent) toast('Plantilla llena (30). Vende o libera a alguien.'); return; }
   const p = c.jugadores.splice(i, 1)[0]; p.scouted = true; p.contrato = 3; p.moral = 80; p.equipoOrigen = 'Cantera ' + u.nombre; p.cantera = true;
-  u.plantilla.push(p);
+  u.plantilla.push(p); try { if (root.ACH && ACH.onPromo) ACH.onPromo(p, 'u17'); } catch (e) { }
   if (!silent) { pushNews(`🌱 ${p.nombre} (${p.edad}, ${p.posicion}) debuta en el primer equipo.`, 'bueno', 'club'); toast('Promovido: ' + p.nombre); autoSave(); refresh(); }
 }
 function releaseProspect(id) {
@@ -693,7 +693,7 @@ function foundGo() {
 let MODE = 'dt', TEC_TAB = 'equipo', STAFF_PICK = 'fisio';
 const LASTSUB = {};
 const SECT_PRO = [
-  { id: 'despacho', ico: '🏛', n: 'Despacho', subs: [['despacho', 'Inicio'], ['palmares', 'Palmarés'], ['probador', 'Probador 3D']] },
+  { id: 'despacho', ico: '🏛', n: 'Despacho', subs: [['despacho', 'Inicio'], ['palmares', 'Palmarés'], ['legado', 'Legado'], ['probador', 'Probador 3D']] },
   { id: 'club', ico: '⚽', n: 'Club', subs: [['plantilla', 'Plantel'], ['planteles', 'Planteles'], ['tecnico', 'Cuerpo técnico'], ['cantera', 'Cantera']] },
   { id: 'mercado', ico: '💼', n: 'Fichajes', subs: [['mercado', 'Mercado'], ['region', 'Región']] },
   { id: 'liga', ico: '🏆', n: 'Torneos', subs: [['calendario', 'Calendario'], ['clasificacion', 'Tabla'], ['copa', 'Copa'], ['centro', 'Centroamérica'], ['concacaf', 'CONCACAF'], ['stats', 'Estadísticas']] },

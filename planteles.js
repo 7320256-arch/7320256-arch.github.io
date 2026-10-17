@@ -133,7 +133,7 @@
       if (to !== 'pri' && arr(to).length >= CAT[to].cap) { toast(CAT[to].n + ' está lleno (' + CAT[to].cap + ').'); return false; }
       arr(f.cat).splice(f.i, 1);
       if (to === 'pri') {
-        p.scouted = true; p.contrato = Math.max(2, p.contrato || 0); p.moral = Math.max(p.moral || 0, 78); p.cantera = true;
+        p.scouted = true; p.contrato = Math.max(2, p.contrato || 0); p.moral = Math.max(p.moral || 0, 78); p.cantera = true; try { if (window.ACH && ACH.onPromo) ACH.onPromo(p, f.cat); } catch (e) { }
         p.salario = Math.round((p.media * p.media * 0.9 + p.media * 15) / 10) * 10;
         st(); gg().plStats.promos = (gg().plStats.promos || 0) + 1;
       }
@@ -297,7 +297,7 @@
     const U = club(); const xi = bestXI(U.plantilla, '4-4-2');
     const floor = (xi.length ? Math.min.apply(null, xi.map(p => p.media)) : 50) - 2;
     const cand = arr('res').concat(arr('u20')).filter(p => p.edad >= 18 && p.media >= floor).sort((a, b) => b.media - a.media).slice(0, 2);
-    cand.forEach(p => { if (arr('pri').length < 26) { const f = find(p.id); if (f) { arr(f.cat).splice(f.i, 1); p.scouted = true; p.contrato = 3; p.moral = 80; p.cantera = true; p.salario = Math.round((p.media * p.media * 0.9 + p.media * 15) / 10) * 10; U.plantilla.push(p); gg().plStats.promos = (gg().plStats.promos || 0) + 1; try { pushNews(`🌱 ${p.nombre} (${p.edad}, ${p.media}/${p.potencial}) sube solo al primer equipo.`, 'bueno', 'club'); unlockAchievement('cantera_debut', 'De la cantera', 'Subiste un juvenil de la cantera al primer equipo'); } catch (e) { } } } });
+    cand.forEach(p => { if (arr('pri').length < 26) { const f = find(p.id); if (f) { arr(f.cat).splice(f.i, 1); p.scouted = true; p.contrato = 3; p.moral = 80; p.cantera = true; p.salario = Math.round((p.media * p.media * 0.9 + p.media * 15) / 10) * 10; U.plantilla.push(p); gg().plStats.promos = (gg().plStats.promos || 0) + 1; try { if (window.ACH && ACH.onPromo) ACH.onPromo(p, f.cat); } catch (e) { } try { pushNews(`🌱 ${p.nombre} (${p.edad}, ${p.media}/${p.potencial}) sube solo al primer equipo.`, 'bueno', 'club'); unlockAchievement('cantera_debut', 'De la cantera', 'Subiste un juvenil de la cantera al primer equipo'); } catch (e) { } } } });
   }
   // Si un plantel supera su tope, salen libres los de menor proyección (los más veteranos primero en empate).
   function trim() {

@@ -441,6 +441,7 @@ body.device-phone .tab.go{order:-1;left:0;right:auto;margin-left:0;margin-right:
     <button class="tab" data-v="tactica" onclick="switchView('tactica')">🧠 Táctica</button>
     <button class="tab" data-v="mercado" onclick="switchView('mercado')">🛒 Mercado</button>
     <button class="tab" data-v="region" onclick="switchView('region')">🌎 Región</button>
+    <button class="tab" data-v="legado" onclick="switchView('legado')">📖 Legado</button>
     <button class="tab" data-v="finanzas" onclick="switchView('finanzas')">💰 Finanzas</button>
     <button class="tab" data-v="entreno" onclick="switchView('entreno')">🏋 Entreno</button>
     <button class="tab" data-v="calendario" onclick="switchView('calendario')">📅 Calendario</button>
@@ -472,6 +473,7 @@ body.device-phone .tab.go{order:-1;left:0;right:auto;margin-left:0;margin-right:
     <section id="view-palmares" class="view hidden"><div class="panel" id="palmares-panel"></div></section>
     <section id="view-planteles" class="view hidden"><div class="panel" id="planteles-panel"></div></section>
     <section id="view-region" class="view hidden"><div class="panel" id="region-panel"></div></section>
+    <section id="view-legado" class="view hidden"><div class="panel" id="legado-panel"></div></section>
     <section id="view-plantilla" class="view hidden"><div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px"><div class="panel-title" style="margin:0">👥 Plantilla</div><div id="pl-info" class="muted"></div></div><div class="sq-filter" id="sq-filter"></div><div class="scroll" style="max-height:70vh"><table class="tbl"><thead><tr><th>Pos</th><th>Jugador</th><th class="center">Edad</th><th class="center">Atq</th><th class="center">Def</th><th class="center">Fís</th><th class="center">Prt</th><th class="center">Med</th><th class="center">Pot</th><th>Personalidad</th><th>Energía</th><th class="center">Moral</th><th class="center">Salario</th><th class="center">Estado</th><th class="right">Valor</th><th class="center">Acción</th></tr></thead><tbody id="squad-body"></tbody></table></div></div></section>
 
     <section id="view-tactica" class="view hidden">
@@ -592,6 +594,7 @@ body.device-phone .tab.go{order:-1;left:0;right:auto;margin-left:0;margin-right:
 <script src="logros80.js"></script>
 <script src="planteles.js"></script>
 <script src="regional.js"></script>
+<script src="legado.js"></script>
 <script src="liga-gt.js"></script>
 <script src="liga-hn.js"></script>
 <script src="liga-cr.js"></script>
@@ -1086,7 +1089,7 @@ const TOTAL_JORNADAS=22;
 /* ---------- ESTADO ---------- */
 let G=null;
 const SAVE_KEY='rfm_sv_save_v2';
-const GAME_VERSION='2.8';
+const GAME_VERSION='2.9';
 const BUILD_ID='2.4-fundacion'
 const FORMACIONES={'Libre':{def:0,med:0,del:0,l:'XI Libre (sin esquema)'},'4-4-2':{def:4,med:4,del:2,l:'4-4-2 Equilibrada'},'4-3-3':{def:4,med:3,del:3,l:'4-3-3 Ofensiva'},'3-5-2':{def:3,med:5,del:2,l:'3-5-2 Control'},'5-3-2':{def:5,med:3,del:2,l:'5-3-2 Muralla'},'4-2-3-1':{def:4,med:5,del:1,l:'4-2-3-1 Moderna'}};
 const MENTALIDADES={'Defensiva':{atk:0.80,def:1.20},'Contraataque':{atk:1.05,def:1.05},'Equilibrada':{atk:1.0,def:1.0},'Ofensiva':{atk:1.20,def:0.85}};
@@ -1507,7 +1510,7 @@ function migrateState(){
     // v2.4: esquema versionado. Migración NO destructiva: sólo añade campos, nunca borra ni recalcula historial.
     const from=G.meta.schema||4;
     if(from<SAVE_SCHEMA){G.meta.migratedFrom=from;G.meta.migratedAt=Date.now();G.meta.schema=SAVE_SCHEMA;G.ageRule='clausura';}
-    if(window.FIN)FIN.migrate();if(window.ACH)ACH.migrate();if(window.PL)PL.migrate();if(window.REG)REG.migrate();
+    if(window.FIN)FIN.migrate();if(window.ACH)ACH.migrate();if(window.PL)PL.migrate();if(window.REG)REG.migrate();if(window.LEG)LEG.migrate();
   }
   validateGameState(false);
 }
@@ -2604,10 +2607,12 @@ function endSeason(){
   const fired=G.confianza<=0;
   if(fired){G.confianza=40;G.avisos++;}
   if(window.REG)REG.onYearEnd(seasonRes,fired);
+  if(window.LEG)LEG.onCampaign(seasonRes,fired);
   submitRanking();autoSave();renderAll();
   if(window.RETOS&&RETOS.endSeasonHook(seasonRes,fired))return;
   const _go=()=>{if(window.PRES&&PRES.endSeasonHook(seasonRes,fired))return;if(fired)showFiredModal(seasonRes);else showOffersModal(seasonRes);};
-  if(window.FIN)FIN.showPending(()=>{if(window.ACH)ACH.showPendingCeremony(_go);else _go();});else _go();
+  const _go0=()=>{if(window.LEG)LEG.showPending(_go);else _go();};
+  if(window.FIN)FIN.showPending(()=>{if(window.ACH)ACH.showPendingCeremony(_go0);else _go0();});else _go0();
 }
 
 function showFiredModal(res){
@@ -2950,7 +2955,7 @@ function renderMarket(){const u=userClub();
 
 function buyPlayer(id){if(blockIfLive('fichar jugadores'))return;const eliteCheck=findMarketPlayer(id);if(eliteCheck&&eliteCheck.p&&eliteCheck.p.elite)return negotiateElitePlayer(id);const u=userClub();let pool='mercado';let i=G.mercado.findIndex(p=>p.id===id);if(i<0){pool='agentOffers';i=(G.agentOffers||[]).findIndex(p=>p.id===id);}if(i<0)return;const p=G[pool][i];const total=p.precio+(p.comision||0);
   if(G.budget<total){toast('Presupuesto insuficiente');return;}if(u.plantilla.length>=26){toast('Plantilla llena (máx 26)');return;}
-  G.budget-=total;p.contrato=1+rnd(3);p.moral=70+rnd(20);p.scouted=true;u.plantilla.push(p);G[pool].splice(i,1);fin('Mercado','gasto',-p.precio,`Fichaje: ${p.nombre}`);if(p.comision)fin('Agente','gasto',-p.comision,`Comisión: ${p.nombre}`);pushNews(`✍️ Fichaje: ${p.nombre} (${p.posicion},${p.media}) por ${money(total)} incluyendo agente.`, 'bueno','mercado');pushTransferNews(`${userClub().nombre} ficha a ${p.nombre} desde ${p.equipoOrigen||'mercado'} por ${money(total)}.`);autoSave();renderAll();toast('¡Fichaje!');}
+  if(window.ACH)ACH.onTrade(HOME(),'buy');G.budget-=total;p.contrato=1+rnd(3);p.moral=70+rnd(20);p.scouted=true;u.plantilla.push(p);G[pool].splice(i,1);fin('Mercado','gasto',-p.precio,`Fichaje: ${p.nombre}`);if(p.comision)fin('Agente','gasto',-p.comision,`Comisión: ${p.nombre}`);pushNews(`✍️ Fichaje: ${p.nombre} (${p.posicion},${p.media}) por ${money(total)} incluyendo agente.`, 'bueno','mercado');pushTransferNews(`${userClub().nombre} ficha a ${p.nombre} desde ${p.equipoOrigen||'mercado'} por ${money(total)}.`);autoSave();renderAll();toast('¡Fichaje!');}
 function refreshMarket(pay){if(blockIfLive('refrescar mercado'))return;if(pay){if(G.budget<15000){toast('Necesitas $15.000');return;}G.budget-=15000;fin('Agente','gasto',-15000,'Scouting y llamadas de agentes');}G.mercado=genMarket(10);G.agentOffers=genAgentOffers(userClub().nivel);autoSave();renderMarket();toast('Mercado renovado');}
 function renewContract(id){if(blockIfLive('renovar contratos'))return;const u=userClub();const p=u.plantilla.find(x=>x.id===id);if(!p)return;const cost=Math.round(p.salario*(0.8+Math.random()*0.6));if(G.budget<cost){toast('No alcanza prima de renovación: '+money(cost));return;}G.budget-=cost;p.contrato=3;p.moral=clamp((p.moral||60)+18,0,100);p.quiereIrse=false;fin('Plantilla','gasto',-cost,'Renovación: '+p.nombre);pushNews(`📝 Renovación: ${p.nombre} firma 3 años.`, 'bueno');autoSave();renderAll();}
 function fairWage(p){return Math.round((p.media*p.media*0.9+p.media*15)/10)*10;}
@@ -2986,7 +2991,7 @@ function offerSellPlayer(id){if(blockIfLive('vender jugadores'))return;const u=u
   const clubs=Object.values(G.clubes).filter(c=>c.id!==G.userClubId&&c.nivel<=u.nivel+1).map(c=>c.nombre);
   const offers=[0.72+Math.random()*0.22,0.86+Math.random()*0.26,1.02+Math.random()*0.28].map((m,i)=>({club:pick(clubs),val:Math.round(p.valorMercado*m),i})).sort((a,b)=>b.val-a.val);
   openModal(`<div class="modal-title">💵 Ofertas por ${esc(p.nombre)}</div><p>${p.posicion} · Media <b class="amber">${p.media}</b> · Valor de mercado ${money(p.valorMercado)}</p><hr class="sep">${offers.map(o=>`<div class="offer"><div style="display:flex;justify-content:space-between;align-items:center"><div><b>${esc(o.club)}</b><br><span class="muted">Oferta del agente</span></div><div><b class="green">${money(o.val)}</b> <button class="btn btn-p btn-sm" onclick="acceptSale('${id}',${o.val})">Aceptar</button></div></div></div>`).join('')}<div class="center"><button class="btn" onclick="closeModal()">Cancelar</button></div>`);}
-function acceptSale(id,val,buyer){if(blockIfLive('vender jugadores'))return;const u=userClub();const i=u.plantilla.findIndex(p=>p.id===id);if(i<0)return;const p=u.plantilla[i];if(u.plantilla.length<=16){toast('Necesitás al menos 16 jugadores en la plantilla para vender');return;}if(p.posicion==='POR'&&u.plantilla.filter(x=>x.posicion==='POR').length<=2){toast('Debés conservar al menos 2 porteros');return;}G.budget+=val;u.plantilla.splice(i,1);G.inboxOffers=(G.inboxOffers||[]).filter(o=>o.pid!==id);G.tactics.alineacion=G.tactics.alineacion.filter(x=>x!==id);ensureValidXI();moveSold(p,buyer);fin('Mercado','ingreso',val,`Venta: ${p.nombre}`);pushNews(`💵 Venta: ${p.nombre}${buyer?' a '+buyer.club:''} por ${money(val)}.`,'bueno','mercado');pushTransferNews(`${userClub().nombre} vende a ${p.nombre} por ${money(val)}.`);closeModal();autoSave();renderAll();toast('Vendido');}
+function acceptSale(id,val,buyer){if(blockIfLive('vender jugadores'))return;const u=userClub();const i=u.plantilla.findIndex(p=>p.id===id);if(i<0)return;const p=u.plantilla[i];if(u.plantilla.length<=16){toast('Necesitás al menos 16 jugadores en la plantilla para vender');return;}if(p.posicion==='POR'&&u.plantilla.filter(x=>x.posicion==='POR').length<=2){toast('Debés conservar al menos 2 porteros');return;}G.budget+=val;u.plantilla.splice(i,1);G.inboxOffers=(G.inboxOffers||[]).filter(o=>o.pid!==id);G.tactics.alineacion=G.tactics.alineacion.filter(x=>x!==id);ensureValidXI();moveSold(p,buyer);if(window.ACH)ACH.onSale(p,(buyer&&buyer.country)||HOME());fin('Mercado','ingreso',val,`Venta: ${p.nombre}`);pushNews(`💵 Venta: ${p.nombre}${buyer?' a '+buyer.club:''} por ${money(val)}.`,'bueno','mercado');pushTransferNews(`${userClub().nombre} vende a ${p.nombre} por ${money(val)}.`);closeModal();autoSave();renderAll();toast('Vendido');}
 
 
 
@@ -3048,7 +3053,7 @@ function scoutBid(i,pct){if(blockIfLive('fichar jugadores'))return;const r=SC_RE
   const star=club&&bestXI(club.plantilla,'4-4-2').some(x=>x.id===p.id),need=(star?135:112)+rnd(16)-(p.edad>=31?10:0)-(p.contrato<=1?10:0);G.bidLock[r.club]=T;
   if(pct<need){toast(`${r.club} rechazó ${money(val)}. ${pct>=need-12?'Está cerca: piden algo más.':'Piden bastante más.'}`);return;}
   G.budget-=tot;if(club)club.plantilla=club.plantilla.filter(x=>x.id!==p.id);const np=Object.assign({},p,{id:club?p.id:uid(),contrato:3,moral:70+rnd(20),scouted:true});u.plantilla.push(np);
-  fin('Mercado','gasto',-tot,'Fichaje: '+np.nombre);pushNews(`✅ Fichaje: ${np.nombre} llega desde ${r.club} (${r.country}) por ${money(tot)}.`,'bueno','mercado');pushTransferNews(`${u.nombre} ficha a ${np.nombre} desde ${r.club} por ${money(tot)}.`);
+  if(window.ACH)ACH.onTrade(r.country,'buy');fin('Mercado','gasto',-tot,'Fichaje: '+np.nombre);pushNews(`✅ Fichaje: ${np.nombre} llega desde ${r.club} (${r.country}) por ${money(tot)}.`,'bueno','mercado');pushTransferNews(`${u.nombre} ficha a ${np.nombre} desde ${r.club} por ${money(tot)}.`);
   autoSave();closeModal();renderAll();toast('¡Fichaje cerrado!');}
 function signSponsor(id){if(blockIfLive('firmar patrocinador'))return;const o=(G.sponsorOffers||[]).find(x=>x.id===id);if(!o)return;G.sponsor=o;G.budget+=o.up;fin('Patrocinador','ingreso',o.up,'Prima de firma: '+o.nombre);pushNews(`🤝 Patrocinador firmado: ${o.nombre}. Prima ${money(o.up)} + ${money(o.base)}/fecha.`, 'bueno');autoSave();renderAll();toast('Patrocinador firmado');}
 function stadiumProjectCost(kind,e){const lvl=userClub().nivel;if(kind==='aforo')return Math.round(e.aforo*(95+(e.nivel||1)*40));if(kind==='iluminacion')return{1:420000,2:190000,3:85000}[lvl];if(kind==='palcos')return Math.round({1:650000,2:260000,3:110000}[lvl]*(1+(e.palcosNivel||0)*0.9));if(kind==='cancha')return{1:260000,2:120000,3:55000}[lvl];if(kind==='tienda')return Math.round({1:380000,2:170000,3:70000}[lvl]*(1+(e.tienda||0)*0.8));if(kind==='accesos')return Math.round({1:300000,2:140000,3:60000}[lvl]*(1+(e.accesos||0)*0.7));return 100000;}
@@ -3057,12 +3062,21 @@ function processStadiumConstruction(){const e=userClub().estadio;if(!e||!e.const
 function improveStadium(){startStadiumProject('aforo');}
 function changeTicket(delta){if(blockIfLive('cambiar boletos'))return;const e=userClub().estadio||(userClub().estadio=initStadium(userClub().id,userClub().nivel,userClub().estadioPropio,userClub().ciudad));e.precio=clamp(e.precio+delta,1,stadiumMaxPrice(userClub().nivel));autoSave();renderAll();toast('Boleto de gradas: '+money(e.precio));}
 function changePalcoTicket(delta){if(blockIfLive('cambiar precio de palcos'))return;const u=userClub(),e=stadiumNorm(u.estadio||(u.estadio=initStadium(u.id,u.nivel,u.estadioPropio,u.ciudad)),u.nivel);const mx=stadiumMaxPrice(u.nivel)*10;e.precioPalco=clamp(e.precioPalco+delta,Math.max(5,e.precio),mx);autoSave();renderAll();toast('Palco: '+money(e.precioPalco));}
+function finHelp(){openModal(`<div class="modal-title">❓ Cómo leer tus finanzas</div>
+  <div class="pr-msgs"><div>💵 <b>Ingresos brutos:</b> todo lo que entra antes de pagar nada: taquilla, TV, patrocinio y premios.</div>
+  <div>🏆 <b>Premios:</b> dinero por torneos (liga, copas, Centroamericana, CONCACAF). Cuentan como ingreso, pero no se repiten solos todos los años.</div>
+  <div>💸 <b>Gastos:</b> salarios, estadio, cantera, agentes y obras. Los salarios son lo más pesado.</div>
+  <div>🔁 <b>Traspasos:</b> ventas y fichajes. Mueven mucha plata una sola vez; no son ingreso recurrente.</div>
+  <div>🏦 <b>Caja:</b> lo que tenés disponible hoy: caja anterior + ingresos − gastos. Si la caja llega a negativo, estás en riesgo.</div>
+  <div>📒 <b>Libro mayor:</b> el detalle de cada movimiento del año. Si el informe cuadra, no hay dinero "perdido".</div></div>
+  <p class="muted"><small>Regla práctica: que tus ingresos recurrentes (taquilla + TV + patrocinio) cubran tus gastos fijos. Los premios y las ventas son un extra.</small></p>
+  <div class="center" style="margin-top:12px"><button class="btn btn-p" onclick="closeModal()">Entendido</button></div>`);}
 function renderFinanzas(){const u=userClub();const est=estimateNextBalance();const sp=G.sponsor;const sig=financeSignal();const proj=financeProjection(3);const e=u.estadio||(u.estadio=initStadium(u.id,u.nivel,u.estadioPropio,u.ciudad));
   const stadiumOps=(e.opciones||stadiumOptions(u.id,u.nivel,u.ciudad)).map(o=>`<div class="offer"><b>${esc(o.nombre)}</b><br>Aforo ${o.aforo.toLocaleString('en-US')} · Alquiler ${money(o.alquiler)}/fecha · Compra ${money(o.precio)}<br><button class="btn btn-sm" onclick="rentStadium('${o.id}')">Alquilar</button> <button class="btn btn-p btn-sm" onclick="buyStadium('${o.id}')">Comprar</button></div>`).join('');
   const offers=(G.sponsorOffers||genSponsorOffers(u.nivel)).map(o=>`<div class="offer"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><div><b class="cyan">${esc(o.nombre)}</b> <span class="tag amber">Riesgo ${o.riesgo}</span><br><span class="muted">Firma ${money(o.up)} · Fijo ${money(o.base)}/fecha · Victoria ${money(o.win)} · Objetivo ${money(o.obj)}</span></div><button class="btn btn-p btn-sm" ${sp?'disabled':''} onclick="signSponsor('${o.id}')">Firmar</button></div></div>`).join('');
   const rows=(G.finanzas||[]).slice(0,18).map(x=>`<tr><td class="center">${x.temp}</td><td class="center">F${x.j}</td><td>${esc(x.tipo)}</td><td class="${x.monto>=0?'green':'red'} right">${x.monto>=0?'+':''}${money(x.monto)}</td><td class="muted">${esc(x.detalle)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted center">Sin movimientos registrados todavía.</td></tr>';
   const projectBtns=e.propio?(e.construccion&&e.construccion.weeks>0?`<span class="tag amber">Obra: ${e.construccion.kind} · ${e.construccion.weeks} fechas</span>`:`<button class="btn btn-a btn-sm" onclick="startStadiumProject('aforo')">Ampliar aforo (${money(stadiumProjectCost('aforo',e))})</button> <button class="btn btn-sm" onclick="startStadiumProject('iluminacion')">Iluminación (${money(stadiumProjectCost('iluminacion',e))})</button> <button class="btn btn-sm" onclick="startStadiumProject('palcos')">Palcos (${money(stadiumProjectCost('palcos',e))})</button> <button class="btn btn-sm" onclick="startStadiumProject('cancha')">Cancha (${money(stadiumProjectCost('cancha',e))})</button> <button class="btn btn-sm" onclick="startStadiumProject('tienda')">Tienda oficial (${money(stadiumProjectCost('tienda',e))})</button> <button class="btn btn-sm" onclick="startStadiumProject('accesos')">Accesos/parqueo (${money(stadiumProjectCost('accesos',e))})</button>`):'';
-  $('finanzas-panel').innerHTML=`<div class="panel-title">💰 Finanzas, Patrocinadores y Estadio</div>${window.FIN?FIN.panelHTML():''}
+  $('finanzas-panel').innerHTML=`<div class="panel-title">💰 Finanzas, Patrocinadores y Estadio <button class="btn btn-sm" style="float:right" onclick="finHelp()">❓ Cómo leer tus finanzas</button></div>${window.FIN?FIN.panelHTML():''}
   <div class="grid g3"><div><span class="muted">Presupuesto operativo</span><div class="pxl ${G.budget<0?'red':'green'}" style="font-size:15px">${money(G.budget)}</div><small>Reserva del club: ${money(G.clubReserve||0)} (más abajo)</small></div><div><span class="muted">Semáforo 3 fechas</span><div class="pxl ${sig.cls==='good'?'green':sig.cls==='bad'?'red':'amber'}" style="font-size:14px">${sig.label} · ${sig.total>=0?'+':''}${money(sig.total)}</div><small>Ingreso aprox. ${money(est.income)} − costos ${money(est.cost)}</small></div><div><span class="muted">TV por fecha</span><div class="cyan">${money(tvIncome(u.nivel))}</div></div></div>
   <div class="finance-strip">${proj.map((x,i)=>`<div class="finance-card ${x.net>=0?'good':x.net>=-15000?'mid':'bad'}"><b>Fecha ${G.jornadaActual+i}</b><br>${esc(x.detail)}<br><span class="green">Ing ${money(x.income)}</span><br><span class="red">Cost ${money(x.cost)}</span><br><b class="${x.net>=0?'green':'red'}">${x.net>=0?'+':''}${money(x.net)}</b></div>`).join('')}</div>
   ${window.ECO?ECO.finBox():''}
@@ -3192,7 +3206,7 @@ function playQuick(){if(window.PRES)PRES.beforePlay();if(!prepComplete()){toast(
 function switchView(v){if(window.PRES)v=PRES.redirect(v);if(isLiveRunning()&&isCriticalView(v)){toast(v==='tactica'?'Táctica solo en el descanso':'Esta sección está bloqueada durante el partido en vivo');return;}if(!SIM)abortSim();CUR=v;document.querySelectorAll('.view').forEach(s=>s.classList.add('hidden'));
   const sec=$('view-'+v);if(sec)sec.classList.remove('hidden');
   document.querySelectorAll('.tab').forEach(t=>{t.classList.toggle('active',t.dataset.v===v);});
-  if(v==='dashboard')renderDashboard();if(v==='carrera')renderCarrera();if(v==='plantilla')renderSquad();if(v==='tactica')renderTactics();if(v==='mercado')renderMarket();if(v==='finanzas')renderFinanzas();if(v==='entreno')renderEntreno();if(v==='calendario')renderCalendario();if(v==='copa')renderCopa();if(v==='centro')renderCentro();if(v==='concacaf')renderConcacaf();if(v==='stats')renderStats();if(v==='noticias'){syncOnlineNow(true);renderNoticias();}if(v==='clasificacion'){VIEW_DIV=userClub().nivel;renderTable();}if(v==='partido')renderMatch();if(v==='novedades')renderNovedades();if(v==='logros')renderLogros();if(v==='palmares')renderPalmares();if(v==='planteles'&&window.PL)PL.render();if(v==='region'&&window.REG)REG.render();
+  if(v==='dashboard')renderDashboard();if(v==='carrera')renderCarrera();if(v==='plantilla')renderSquad();if(v==='tactica')renderTactics();if(v==='mercado')renderMarket();if(v==='finanzas')renderFinanzas();if(v==='entreno')renderEntreno();if(v==='calendario')renderCalendario();if(v==='copa')renderCopa();if(v==='centro')renderCentro();if(v==='concacaf')renderConcacaf();if(v==='stats')renderStats();if(v==='noticias'){syncOnlineNow(true);renderNoticias();}if(v==='clasificacion'){VIEW_DIV=userClub().nivel;renderTable();}if(v==='partido')renderMatch();if(v==='novedades')renderNovedades();if(v==='logros')renderLogros();if(v==='palmares')renderPalmares();if(v==='planteles'&&window.PL)PL.render();if(v==='region'&&window.REG)REG.render();if(v==='legado'&&window.LEG)LEG.render();
   if(window.PRES)PRES.onSwitch(v);if(window.SEL)SEL.onSwitch(v);if(window.EMB)EMB.onSwitch(v);
   document.querySelector('main').scrollTop=0;renderLiveMini();}
 function renderAll(){if(window.PRES)PRES.chrome();if(window.SEL)SEL.chrome();if(window.EMB)EMB.chrome();if(window.RETOS)RETOS.chrome();renderTopbar();switchView(CUR);renderLiveMini();updateNovDot();}
@@ -3260,6 +3274,11 @@ function toggleZB(){try{localStorage.setItem('rfm_zb_collapsed',zbCollapsed()?'0
 
 /* ---------- NOVEDADES / CHANGELOG ---------- */
 const CHANGELOG=[
+ {v:'2.9',fecha:'16 oct 2026',titulo:'Legado Cuscatleco: La ruta al Mundial',items:[
+  ['📖','Saga de cuatro capítulos','Pestaña Legado: una historia opcional para tu carrera salvadoreña (DT, Presidente o Fundador). Sigue a una promesa salvadoreña, una promesa de la región y un capitán.'],
+  ['🎬','Escenas y finales','Cada capítulo cierra con una escena según tus resultados reales (caja, cantera, minutos, ventas, torneos regionales y Selecta). Hay cuatro finales posibles.'],
+  ['🏅','Logros activados','Ya cuentan los logros de planteles juveniles, carrera regional y la saga (antes aparecían bloqueados).'],
+  ['📘','Tutorial y ayuda de finanzas','Tutorial ampliado (planteles, Región y Legado) y un botón ❓ en Finanzas que explica ingresos, gastos, premios y caja.']]},
  {v:'2.8',fecha:'15 oct 2026',titulo:'Modo Regional conectado',items:[
   ['🌎','Ofertas del extranjero','Al cerrar el año (o si te echan) te llegan ofertas de clubes de Guatemala, Honduras, Costa Rica, Panamá, Nicaragua o El Salvador, según tu reputación.'],
   ['🏛','Para DT, Presidente y Fundador','El DT dirige a otro club, el Presidente preside otro club y el Fundador (ya en profesional, con varios años de gestión) puede dejar su club fundado.'],
@@ -3367,14 +3386,14 @@ function renderNovedades(){
     <div class="center" style="margin-top:10px"><button class="btn btn-p" onclick="startTutorial(true)">📘 Ver tutorial</button> <button class="btn btn-a" onclick="sendFeedback()">📧 Enviar opinión</button> <button class="btn" onclick="exportSave()">⬇ Exportar mi partida</button></div>`;
 }
 function showUpdateModal(){
-  const key='rfm_update_v2_8_seen';
+  const key='rfm_update_v2_9_seen';
   try{if(localStorage.getItem(key)==='1')return false;localStorage.setItem(key,'1');}catch(e){return false;}
-  openModal(`<div class="modal-title">🆕 Actualización v${GAME_VERSION}</div><p><b class="green">v2.8: Modo Regional conectado — ofertas de otros países para DT, Presidente y Fundador, trayectoria y pestaña 🌎 Región.</b></p>
+  openModal(`<div class="modal-title">🆕 Actualización v${GAME_VERSION}</div><p><b class="green">v2.9: 📖 Legado Cuscatleco — la saga «La ruta al Mundial» (4 capítulos, varios finales), logros activados y tutorial renovado.</b></p>
     <div class="offer"><b class="gold">🎨 Temas, logros y filtro de plantilla</b><br><small>8 temas, pestaña Logros y 12 patrocinadores.</small></div><div class="offer"><b class="gold">🌱 Cantera para DT y 🇸🇻 Selección</b><br><small>Juveniles suben solos; Selección con parones FIFA también como presidente.</small></div>
     <div class="offer"><b class="gold">🎯 Retos cortos</b><br><small>Salva al club del descenso y más. Botón 🎯 arriba. Reto del día con racha.</small></div>
     <div class="offer"><b class="gold">🏛 Presidente, 🌱 fundar club y 👔 probador 3D</b><br><small>Novedades de la v1.9 siguen disponibles.</small></div>
     <div class="center"><button class="btn btn-p" onclick="closeModal();switchView('novedades')">🆕 Ver novedades</button> <button class="btn" onclick="closeModal()">▶ Seguir mi carrera</button></div>`);
-  if(G)pushNews(`🆕 Actualización v${GAME_VERSION}: Modo Regional conectado.`,'info','club');
+  if(G)pushNews(`🆕 Actualización v${GAME_VERSION}: Legado Cuscatleco.`,'info','club');
   return true;
 }
 function showLaunchModal(kind){
@@ -3499,20 +3518,23 @@ const TUTORIAL_STEPS=[
   {v:'entreno',t:'4. Entrenamiento manual',d:'Elegí intensidad y enfoque. Entrenar Ataque, Defensa o Físico puede subir atributos y dar bonus para el próximo partido, pero también cansa y puede lesionar si abusás del Intenso.'},
   {v:'plantilla',t:'5. Plantilla, moral y contratos',d:'La moral, energía, salario y contrato importan. Renovar evita salidas libres. Bajar salario puede molestar; vender o negociar ofertas ayuda a controlar la nómina.'},
   {v:'tactica',t:'6. Táctica y partido en vivo',d:'Configurás formación, mentalidad, presión y ritmo. En vivo se juega primer tiempo, pausa al descanso y podés ajustar táctica/once antes del segundo tiempo. Podés elegir velocidad Rápido, Normal o Lento.'},
-  {v:'finanzas',t:'7. Finanzas y estadio',d:'Vigilá la caja a 3 fechas. Ingresan taquilla, TV, premios y patrocinadores; salen salarios, agentes y estadio. Podés comprar o mejorar estadio, pero las obras tardan.'},
+  {v:'finanzas',t:'7. Finanzas y estadio',d:'Ingresos = taquilla, TV, patrocinio y premios de torneos. Gastos = salarios, estadio, cantera y fichajes. La caja es lo que te queda. Tocá ❓ Cómo leer tus finanzas para ver cada concepto. Podés comprar o mejorar estadio, pero las obras tardan.'},
   {v:'mercado',t:'8. Mercado y agentes',d:'Filtrá por posición, edad, precio y origen. Hay libres, regionales, con club y agentes. Usá scouting para revelar potencial y personalidad antes de fichar.'},
   {v:'copa',t:'9. Copa Presidente',d:'Participan clubes de Primera, Segunda y Tercera. Hay grupos y eliminatorias. Da premios, prestigio y puede clasificar al mundo internacional en futuras campañas.'},
   {v:'centro',t:'10. Copa Centroamericana',d:'Es el torneo regional mayor. Clasifican clubes salvadoreños y de Guatemala, Honduras, Costa Rica, Panamá y Nicaragua. Ganarla aumenta mucho tu reputación y puede clasificarte a CONCACAF.'},
   {v:'concacaf',t:'11. CONCACAF Champions Cup',d:'Es el siguiente nivel internacional: clubes de Centroamérica contra México, MLS, Canadá y Caribe. Los premios son grandes, pero necesitás rotar y competir con una plantilla profunda.'},
   {v:'noticias',t:'12. Noticias y mundo regional',d:'Aquí ves boletín deportivo, marco de fichajes, campeones centroamericanos, ranking regional y tablas de otras ligas. Sirve para entender el mercado y tus futuros rivales.'},
   {v:'dashboard',t:'13. Música y modo offline',d:'El juego puede funcionar sin conexión después de abrirlo con internet. Para que la música también suene offline, abrí el Centro de Ayuda y tocá Guardar música offline cuando tengas conexión.'},
-  {v:'carrera',t:'14. Carrera, avatar y logros',d:'Tu sueldo de DT es personal, no del club. Comprá decoraciones para tu avatar y revisá logros: ascensos, títulos, copas y éxitos regionales.'}
+  {v:'carrera',t:'14. Carrera, avatar y logros',d:'Tu sueldo de DT es personal, no del club. Comprá decoraciones para tu avatar y revisá logros: ascensos, títulos, copas y éxitos regionales.'},
+  {v:'planteles',t:'15. Planteles y cantera',d:'Tenés cuatro planteles: Primer Equipo, Reservas, Sub-20 y Sub-17. Cada uno juega su liga en paralelo. Subí a los mejores cuando estén listos (edad: Sub-17 hasta 17 y Sub-20 hasta 20). Como DT sube solo hasta 2 por año; como Presidente lo decidís vos.'},
+  {v:'region',t:'16. Región: ofertas y mercado',d:'Al cerrar el año te llegan ofertas de clubes de otros países. Si aceptás, se arma esa liga y seguís con tu reputación, palmarés y libro mayor (llevás hasta 2 jugadores). Ahí también ves tu trayectoria y los mejores jugadores de la región.'},
+  {v:'legado',t:'17. Legado Cuscatleco',d:'Saga opcional de cuatro capítulos para una carrera salvadoreña: cantera, debuts, la región y la Selecta rumbo al Mundial. Podés ignorarla sin perder nada; si la jugás, termina en uno de varios finales.'}
 ];
-function startTutorial(force){if(!force&&localStorage.getItem('rfm_tutorial_done_v5')==='1')return;TUTORIAL_IDX=0;showTutorialStep();}
+function startTutorial(force){if(!force&&localStorage.getItem('rfm_tutorial_done_v6')==='1')return;TUTORIAL_IDX=0;showTutorialStep();}
 function showTutorialStep(){const st=TUTORIAL_STEPS[TUTORIAL_IDX];if(!st)return finishTutorial();switchView(st.v);openModal(`<div class="modal-title">📘 Tutorial ${TUTORIAL_IDX+1}/${TUTORIAL_STEPS.length}</div><div class="tutorial-step"><b class="green">${esc(st.t)}</b><p>${esc(st.d)}</p></div><div class="center"><button class="btn" onclick="skipTutorial()">Saltar</button> <button class="btn btn-p" onclick="nextTutorial()">${TUTORIAL_IDX===TUTORIAL_STEPS.length-1?'Finalizar':'Siguiente'} ▶</button></div>`);}
 function nextTutorial(){TUTORIAL_IDX++;if(TUTORIAL_IDX>=TUTORIAL_STEPS.length)finishTutorial();else showTutorialStep();}
 function skipTutorial(){finishTutorial();}
-function finishTutorial(){localStorage.setItem('rfm_tutorial_done_v5','1');closeModal();toast('Tutorial completado');}
+function finishTutorial(){localStorage.setItem('rfm_tutorial_done_v6','1');closeModal();toast('Tutorial completado');}
 const MUSIC_TRACKS=[{file:'menu.mp3',title:'Weight of the Crown'},{file:'menu2.mp3',title:'The Calculated Move'},{file:'menu3.mp3',title:'Paper-thin Crown'},{file:'menu4.mp3',title:'Architecture of Mind'},{file:'menu5.mp3',title:'Sotto La Curva'}];
 const MUSIC_PLAYLIST=MUSIC_TRACKS.map(t=>t.file);
 let MUSIC_QUEUE=[];
@@ -3664,7 +3686,7 @@ const SAVE_BKP1='rfm_sv_save_v2_b1';
 const SAVE_BKP2='rfm_sv_save_v2_b2';
 const SAVE_TEMP='rfm_sv_save_v2_tmp';
 const SAVE_PREMIG='rfm_sv_save_premigrate'; // copia intacta de la partida anterior a migrar de versión
-const SAVE_SCHEMA=9; // v2.8: Modo Regional conectado
+const SAVE_SCHEMA=10; // v2.9: Legado Cuscatleco
 const ALL_SAVE_KEYS=[SAVE_KEY,SAVE_BKP1,SAVE_BKP2];
 
 // Guarda el estado actual en los 3 slots rotando: bkp2<-bkp1, bkp1<-principal, principal<-nuevo.
@@ -3935,7 +3957,7 @@ function promptDT(){if(window.PRES&&PRES.mode()==='fund'){PRES.openFoundation();
   openModal(`<div class="modal-title">🎽 Nombre del ${(window.PRES&&PRES.mode()==='pres')?'Presidente':'Director Técnico'}</div><p class="muted">Así aparecerás en noticias y en el ranking.</p><input id="dt-name-input" maxlength="20" value="DT" style="width:100%;margin:10px 0" onkeydown="if(event.key==='Enter')confirmDT()"><div class="center"><button class="btn btn-p" onclick="confirmDT()">▶ Empezar</button> <button class="btn" onclick="closeModal()">Cancelar</button></div>`);
   setTimeout(()=>{const i=$('dt-name-input');if(i){i.focus();i.select();}},60);}
 function confirmDT(){const i=$('dt-name-input');const nm=((i&&i.value)||'').trim().replace(/\s+/g,' ').slice(0,20)||'DT';closeModal();startGame(PICK_CLUB,nm,window.PRES?PRES.mode():null);}
-function startGame(clubId,nm,gmode){touchLocalActivity();try{localStorage.setItem('rfm_update_v2_8_seen','1');localStorage.setItem('rfm_novedades_seen',GAME_VERSION);}catch(e){}applyDevice(PICK_DEVICE);G=newGameState(clubId,nm);applyCountry(G.pais);G.device=PICK_DEVICE;if(window.PRES)PRES.newGameHook(gmode);if(window.SEL)SEL.migrate();if(window.FIN){FIN.migrate();FIN.openYear();}if(window.ACH)ACH.migrate();if(window.PL)PL.migrate();if(window.REG)REG.migrate();pushNews(gmode==='fund'?`🌱 ${nm} funda ${userClub().nombre}.`:gmode==='pres'?`🏛 ${nm} asume la presidencia de ${userClub().nombre}.`:`👋 ${nm} toma el mando de ${userClub().nombre}.`,'info');autoSave();$('intro').classList.add('hidden');$('app').classList.remove('hidden');renderAll();switchView('dashboard');setTimeout(()=>{if(window.PRES&&PRES.welcome())return;if(!showLaunchModal('new'))startTutorial(false);},400);tryResumeMusic();startOnlineServices();updatePresence();submitRanking();}
+function startGame(clubId,nm,gmode){touchLocalActivity();try{localStorage.setItem('rfm_update_v2_9_seen','1');localStorage.setItem('rfm_novedades_seen',GAME_VERSION);}catch(e){}applyDevice(PICK_DEVICE);G=newGameState(clubId,nm);applyCountry(G.pais);G.device=PICK_DEVICE;if(window.PRES)PRES.newGameHook(gmode);if(window.SEL)SEL.migrate();if(window.FIN){FIN.migrate();FIN.openYear();}if(window.ACH)ACH.migrate();if(window.PL)PL.migrate();if(window.REG)REG.migrate();if(window.LEG)LEG.migrate();pushNews(gmode==='fund'?`🌱 ${nm} funda ${userClub().nombre}.`:gmode==='pres'?`🏛 ${nm} asume la presidencia de ${userClub().nombre}.`:`👋 ${nm} toma el mando de ${userClub().nombre}.`,'info');autoSave();$('intro').classList.add('hidden');$('app').classList.remove('hidden');renderAll();switchView('dashboard');setTimeout(()=>{if(window.PRES&&PRES.welcome())return;if(!showLaunchModal('new'))startTutorial(false);},400);tryResumeMusic();startOnlineServices();updatePresence();submitRanking();}
 
 function boot(){
   touchLocalActivity();applyVisualPrefs();

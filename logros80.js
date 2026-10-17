@@ -54,16 +54,16 @@
       [29, 'Final continental', 'Llegar a la final de la CONCACAF Champions Cup.', 'i'],
       [30, 'Campeones de CONCACAF', 'Ganar la CONCACAF Champions Cup.', 'd:concacaf_champions']]],
     ['Sub-17, Sub-20 y Reservas', [
-      [31, 'Cantera al campo', 'Debutar un jugador Sub-17 en el Primer Equipo.', 'v27'],
-      [32, 'Generación U20', 'Debutar un jugador Sub-20 en el Primer Equipo.', 'v27'],
-      [33, 'Paso de Reserva', 'Promover un jugador de Reservas y darle minutos oficiales al Primer Equipo.', 'v27'],
-      [34, 'Cinco de la casa', 'Dar debut a cinco jugadores formados en el club en un año.', 'v27'],
-      [35, 'Campeones Sub-17', 'Ganar la liga Sub-17 del país.', 'v27'],
-      [36, 'Campeones Sub-20', 'Ganar la liga Sub-20 del país.', 'v27'],
-      [37, 'La Reserva manda', 'Ganar la liga de Reservas.', 'v27'],
-      [38, 'Once de casa', 'Alinear once jugadores formados en el club en un partido oficial.', 'v27'],
-      [39, 'La promesa se consolida', 'Un jugador promovido desde cantera alcanza 50 apariciones oficiales.', 'v27'],
-      [40, 'Venta de academia', 'Vender al extranjero un canterano con al menos 25 apariciones en el Primer Equipo.', 'v27']]],
+      [31, 'Cantera al campo', 'Debutar un jugador Sub-17 en el Primer Equipo.', 'i'],
+      [32, 'Generación U20', 'Debutar un jugador Sub-20 en el Primer Equipo.', 'i'],
+      [33, 'Paso de Reserva', 'Promover un jugador de Reservas y darle minutos oficiales al Primer Equipo.', 'i'],
+      [34, 'Cinco de la casa', 'Dar debut a cinco jugadores formados en el club en un año.', 'i'],
+      [35, 'Campeones Sub-17', 'Ganar la liga Sub-17 del país.', 'i'],
+      [36, 'Campeones Sub-20', 'Ganar la liga Sub-20 del país.', 'i'],
+      [37, 'La Reserva manda', 'Ganar la liga de Reservas.', 'i'],
+      [38, 'Once de casa', 'Alinear once jugadores formados en el club en un partido oficial.', 'i'],
+      [39, 'La promesa se consolida', 'Un jugador promovido desde cantera alcanza 50 apariciones oficiales.', 'i'],
+      [40, 'Venta de academia', 'Vender al extranjero un canterano con al menos 25 apariciones en el Primer Equipo.', 'i']]],
     ['Finanzas, estadio y gestión', [
       [41, 'Cuentas claras', 'Cerrar un año futbolístico con el informe económico completamente reconciliado.', 'i'],
       [42, 'En números verdes', 'Terminar el año con variación neta de caja positiva.', 'i'],
@@ -76,15 +76,15 @@
       [49, 'Caja de seguridad', 'Mantener tres jornadas de costes inevitables cubiertas por caja libre.', 'i'],
       [50, 'De rojo a verde', 'Pasar de estado financiero "riesgo" a "estable" en un año futbolístico.', 'i']]],
     ['Carrera regional y cambios de club', [
-      [51, 'Nuevo país, nuevo reto', 'Aceptar la primera oferta laboral fuera del país inicial.', 'v26'],
-      [52, 'DT trotamundos', 'Dirigir clubes de tres países centroamericanos distintos.', 'v26'],
-      [53, 'Mapa completo', 'Dirigir clubes en los cinco países regionales.', 'v26'],
-      [54, 'Éxito exportable', 'Ganar una liga nacional en dos países distintos.', 'v26'],
-      [55, 'Embajador regional', 'Ganar un título oficial en tres países distintos.', 'v26'],
+      [51, 'Nuevo país, nuevo reto', 'Aceptar la primera oferta laboral fuera del país inicial.', 'i'],
+      [52, 'DT trotamundos', 'Dirigir clubes de tres países centroamericanos distintos.', 'i'],
+      [53, 'Mapa completo', 'Dirigir clubes en los cinco países regionales.', 'i'],
+      [54, 'Éxito exportable', 'Ganar una liga nacional en dos países distintos.', 'i'],
+      [55, 'Embajador regional', 'Ganar un título oficial en tres países distintos.', 'i'],
       [56, 'Ascenso soñado', 'Ascender un club salvadoreño desde Segunda División.', 'i'],
       [57, 'Misión rescate', 'Evitar el descenso de un club que estaba en zona roja a mitad de campaña.', 'i'],
       [58, 'Constructor de dinastías', 'Permanecer cinco años futbolísticos en el mismo club y ganar tres títulos.', 'i'],
-      [59, 'Mercado sin fronteras', 'Comprar y vender jugadores con tres países distintos en una temporada.', 'v26'],
+      [59, 'Mercado sin fronteras', 'Comprar y vender jugadores con tres países distintos en una temporada.', 'i'],
       [60, 'Cien en el banquillo', 'Completar 100 partidos oficiales como DT.', 'i']]],
     ['Legado Cuscatleco: La ruta al Mundial', [
       [61, 'Las raíces', 'Completar el capítulo inicial de la saga.', 'saga'],
@@ -185,8 +185,46 @@
         if (win && m.penWin) unlock(17);
         const l3 = c.finals.slice(-3); if (l3.length === 3 && l3.every(Boolean)) unlock(76);
       }
+      lineup();
+      try { if (root.LEG) LEG.onMatch(m); } catch (e) { }
       check();
     } catch (e) { console.warn('ACH.onMatch', e); }
+  }
+  // v2.9: canteranos en el once, promociones, comercio regional
+  function lineup() {
+    try {
+      const g = gg(), u = userClub(), ids = (g.tactics && g.tactics.alineacion) || [];
+      const xi = ids.map(id => u.plantilla.find(p => p.id === id)).filter(Boolean);
+      const home = xi.filter(p => p.promo && p.promo.club === g.userClubId);
+      home.forEach(p => { if (p.promo.from === 'u17') unlock(31); else if (p.promo.from === 'u20') unlock(32); else if (p.promo.from === 'res') unlock(33); });
+      if (home.length >= 11) unlock(38);
+    } catch (e) { }
+  }
+  function onPromo(p, from) {
+    try {
+      if (!active() || !p) return; const g = gg(), c = S().c;
+      p.promo = { t: g.temporada, from: from || 'u17', club: g.userClubId };
+      c.pr = c.pr || {}; c.pr[g.temporada] = (c.pr[g.temporada] || 0) + 1;
+      if (c.pr[g.temporada] >= 5) unlock(34);
+      if (root.LEG) LEG.onPromo(p, from);
+    } catch (e) { console.warn('ACH.onPromo', e); }
+  }
+  function onTrade(country, kind) {
+    try {
+      if (!active()) return; const g = gg(), c = S().c; c.trade = c.trade || {};
+      const t = c.trade[g.temporada] = c.trade[g.temporada] || { b: {}, s: {} };
+      t[kind === 'buy' ? 'b' : 's'][country] = 1;
+      const all = new Set(Object.keys(t.b).concat(Object.keys(t.s)));
+      if (Object.keys(t.b).length && Object.keys(t.s).length && all.size >= 3) unlock(59);
+    } catch (e) { }
+  }
+  function onSale(p, country) {
+    try {
+      if (!active()) return; const g = gg(); onTrade(country, 'sell');
+      let home = 'El Salvador'; try { home = HOME(); } catch (e) { }
+      if (p && p.promo && p.promo.club === g.userClubId && country !== home && ((p.stats && p.stats.pj) || 0) >= 25) unlock(40);
+      if (root.LEG) LEG.onSale(p, country);
+    } catch (e) { }
   }
   function onMid(pos, n) { try { if (!active()) return; const g = gg(), c = S().c; c.posMid[g.temporada + (g.campania || 'Apertura')] = { pos, n: n || 0 }; } catch (e) { } }
 
@@ -215,6 +253,17 @@
       // estadio
       try { if (userClub().estadio && userClub().estadio.propio) unlock(45); } catch (e) { }
       if (c.occ.length >= 5 && c.occ.reduce((s, x) => s + x, 0) / c.occ.length >= 0.9) unlock(46);
+      // v2.9: Regional (51-55) y planteles (35-37, 39)
+      const R = g.reg, pal = g.palmares || [];
+      if (R) { if ((R.moves || 0) >= 1) unlock(51); const cs = new Set((R.tray || []).map(e => e.pais)); if (cs.size >= 3) unlock(52); if (cs.size >= 5) unlock(53); }
+      const h0 = (R && R.tray && R.tray[0] && R.tray[0].pais) || 'SV';
+      const off = pal.filter(x => !/Sub-\d|Reservas|Supercopa/.test(x.comp || ''));
+      if (new Set(off.filter(x => /^Primera|Liguilla/i.test(x.comp || '')).map(x => x.pais || h0)).size >= 2) unlock(54);
+      if (new Set(off.map(x => x.pais || h0)).size >= 3) unlock(55);
+      if (pal.some(x => x.comp === 'Campeonato Sub-17')) unlock(35);
+      if (pal.some(x => x.comp === 'Campeonato Sub-20')) unlock(36);
+      if (pal.some(x => x.comp === 'Campeonato Reservas')) unlock(37);
+      try { if (userClub().plantilla.some(p => p.promo && p.promo.club === U && p.stats && p.stats.pj >= 50)) unlock(39); } catch (e) { }
       // dinastía: 5 años en el club y 3 títulos con él
       const yrs = c.clubYears[U] || 0, tkClub = Object.keys(c.tk).filter(k => c.tk[k] === U).length;
       if (yrs >= 5 && tkClub >= 3) unlock(58);
@@ -350,9 +399,9 @@
       const a = S(); let ok = 0;
       const groups = CAT.map((c, gi) => {
         const rows = ALL.filter(x => x.g === gi).map(it => {
-          const d = done(it), pend = !d && /^(v26|v27|saga)$/.test(it.st);
+          const d = done(it), pend = !d && it.st === 'saga';
           if (d) ok++;
-          const lab = pend ? '<small class="amber">🔒 Próximamente · ' + (it.st === 'v26' ? 'Modo Regional' : it.st === 'v27' ? 'Cuatro planteles' : 'Legado Cuscatleco') + '</small>' : '';
+          const lab = pend ? '<small class="amber">📖 Se logra en la pestaña Legado</small>' : '';
           const when = d && a.u[it.n] ? `<br><small class="green">✔ ${esc(a.u[it.n].temp)} ${esc(a.u[it.n].camp || '')}</small>` : (d ? '<br><small class="green">✔ Conseguido</small>' : '');
           return `<div class="offer" style="${d ? '' : 'opacity:.6'}"><div style="display:flex;gap:10px;align-items:center"><span style="font-size:22px">${d ? '🏅' : '🔒'}</span><div><b class="${d ? 'gold' : 'muted'}">#${it.n} ${esc(it.name)}</b><br><small class="muted">${esc(it.d)}</small>${lab ? '<br>' + lab : ''}${when}</div></div></div>`;
         }).join('');
@@ -360,11 +409,11 @@
       }).join('');
       const cer = a.cer.length ? `<div class="offer" style="border-color:#ffd447"><b class="gold">👑 CAMPEÓN DE CAMPEONES · MEJOR EQUIPO DEL CONTINENTE</b><br>${a.cer.map((e, i) => `<div style="margin-top:4px">${esc(e.club)} · ${esc(e.temp)} <button class="btn btn-sm" onclick="ACH.replay(${i})">▶ Volver a ver</button></div>`).join('')}</div>` : '';
       return `<div class="panel-title" style="margin-top:14px">🏅 Catálogo ampliado · ${ok}/80</div><div class="bar" style="margin:6px 0"><i style="width:${Math.round(ok / 80 * 100)}%"></i></div>
-        <p class="muted" style="font-size:14px">Se desbloquean con hechos reales de tu carrera y sólo dan prestigio, nunca dinero. Los 🔒 "Próximamente" se activan con los modos nuevos.</p>${cer}${groups}`;
+        <p class="muted" style="font-size:14px">Se desbloquean con hechos reales de tu carrera y sólo dan prestigio, nunca dinero. Los de 📖 Legado se logran jugando la saga.</p>${cer}${groups}`;
     } catch (e) { return ''; }
   }
 
   function migrate() { try { if (active()) { S(); check(); } } catch (e) { } }
 
-  root.ACH = { CAT, ALL, onMatch, onMid, onCampaignEnd, onYearClose, check, showPendingCeremony, replay, panelHTML, migrate, unlock, has, awardCeremony, active };
+  root.ACH = { CAT, ALL, onMatch, onPromo, onTrade, onSale, onMid, onCampaignEnd, onYearClose, check, showPendingCeremony, replay, panelHTML, migrate, unlock, has, awardCeremony, active };
 })(typeof window !== 'undefined' ? window : globalThis);
