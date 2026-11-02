@@ -2,9 +2,9 @@
   "name": "Retro Football Manager SV",
   "short_name": "FM El Salvador",
   "description": "Juego web de gestión futbolística salvadoreña con modo carrera.",
-  "id": "/Retro-Football-Manager-SV/",
-  "start_url": "/Retro-Football-Manager-SV/",
-  "scope": "/Retro-Football-Manager-SV/",
+  "id": "/fm-sv/",
+  "start_url": "/fm-sv/",
+  "scope": "/fm-sv/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#050b05",
@@ -13,10 +13,10 @@
   "categories": ["games", "sports", "simulation"],
   "icons": [
     {
-      "src": "/Retro-Football-Manager-SV/icon-v3-512.png",
+      "src": "/fm-sv/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }
