@@ -1,5 +1,5 @@
 /* Retro Football Manager SV — PWABuilder-safe Service Worker with audio + video range support */
-const CACHE_VERSION = 'rfm-sv-pwabuilder-safe-v6-fmsv';
+const CACHE_VERSION = 'rfm-sv-pwabuilder-safe-v7-fmsv';
 const MUSIC_CACHE = 'rfm-music-offline-v4';
 const INTRO_CACHE = 'rfm-intro-offline-v1';
 const AVATAR_CACHE = 'rfm-avatar-3d-v1';
