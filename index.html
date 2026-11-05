@@ -482,9 +482,9 @@ body.device-phone .tab.go{order:-1;left:0;right:auto;margin-left:0;margin-right:
       <div class="grid g3" style="margin-top:11px">
         <div class="panel"><div class="panel-title">🏆 Tu División</div><div id="dash-pos"></div></div>
         <div class="panel"><div class="panel-title">💰 Finanzas 3 fechas</div><div id="dash-finance"></div></div>
-        <div class="panel"><div class="panel-title">📰 Últimas noticias</div><div <div id="ad-panel"></div>
-      id="dash-news" class="scroll" style="max-height:220px"></div></div>
+        <div class="panel"><div class="panel-title">📰 Últimas noticias</div><div id="dash-news" class="scroll" style="max-height:220px"></div></div>
       </div>
+      <div id="ad-panel"></div>
     </section>
 
     <section id="view-carrera" class="view hidden"><div class="panel" id="carrera-panel"></div></section>
@@ -541,6 +541,85 @@ body.device-phone .tab.go{order:-1;left:0;right:auto;margin-left:0;margin-right:
 
 <!-- Firebase bootstrap: RFM SV Online -->
 <script type="module">
+
+  // Firebase config for online features: presence and ranking.
+  // The apiKey in Firebase web config is public; protect data with Realtime Database rules.
+  const firebaseConfig = {
+    apiKey: "AIzaSyAyy8qk-dByYiRsa6QNX0zFSLbB6TLgFro",
+    authDomain: "rfm-sv-online.firebaseapp.com",
+    projectId: "rfm-sv-online",
+    storageBucket: "rfm-sv-online.firebasestorage.app",
+    messagingSenderId: "31872922932",
+    appId: "1:31872922932:web:59d509972ecac9f86fe161",
+    databaseURL: "https://rfm-sv-online-default-rtdb.firebaseio.com"
+  };
+
+  window.RFM_FIREBASE_CONFIG = firebaseConfig;
+  window.RFM_FIREBASE_READY = false;
+
+  try {
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js");
+    const dbLib = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js");
+    const authLib = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js");
+
+    const app = initializeApp(firebaseConfig);
+    const db = dbLib.getDatabase(app);
+    const auth = authLib.getAuth(app);
+
+    window.RFM_FIREBASE_APP = app;
+    window.RFM_FIREBASE_DB = db;
+    window.RFM_FIREBASE_AUTH = auth;
+    window.RFM_DB = {
+      ref: dbLib.ref,
+      set: dbLib.set,
+      update: dbLib.update,
+      remove: dbLib.remove,
+      onValue: dbLib.onValue,
+      onDisconnect: dbLib.onDisconnect,
+      serverTimestamp: dbLib.serverTimestamp,
+      query: dbLib.query,
+      orderByChild: dbLib.orderByChild,
+      limitToLast: dbLib.limitToLast
+    };
+    window.RFM_AUTH = {
+      signInAnonymously: authLib.signInAnonymously,
+      onAuthStateChanged: authLib.onAuthStateChanged
+    };
+
+    try {
+      await authLib.signInAnonymously(auth);
+    } catch (authError) {
+      // If anonymous auth is not enabled, presence can still try with local id if rules allow it.
+      console.warn("Firebase Auth anónimo no disponible; se usará ID local si reglas lo permiten.", authError);
+    }
+
+    window.RFM_FIREBASE_READY = true;
+    window.dispatchEvent(new CustomEvent('rfm-firebase-ready'));
+    console.log("RFM Firebase inicializado");
+  } catch (error) {
+    window.RFM_FIREBASE_ERROR = String(error && (error.message || error));
+    console.warn("Firebase no disponible; se continúa en modo local/offline.", error);
+  }
+</script>
+<!-- /Firebase bootstrap -->
+
+<script src="avatar3d.js"></script>
+<script src="modo-presidente.js"></script>
+<script src="seleccion.js"></script>
+<script src="retos.js"></script>
+<script src="economia.js"></script>
+<script src="embajador.js"></script>
+<script src="finanzas.js"></script>
+<script src="logros80.js"></script>
+<script src="planteles.js"></script>
+<script src="regional.js"></script>
+<script src="legado.js"></script>
+<script src="liga-gt.js"></script>
+<script src="liga-hn.js"></script>
+<script src="liga-cr.js"></script>
+<script src="liga-pa.js"></script>
+<script src="liga-ni.js"></script>
+<script>
 // Modo: el jugador ELIGE ver un anuncio a cambio de una recompensa.
 // Cooldown: 15 minutos por sesión.
 // MONETAG: cuando crees la unidad de anuncio, pegá su script en el <head> del HTML
@@ -691,84 +770,7 @@ function renderAdPanel(){
   </div>`;
 }
 
-  // Firebase config for online features: presence and ranking.
-  // The apiKey in Firebase web config is public; protect data with Realtime Database rules.
-  const firebaseConfig = {
-    apiKey: "AIzaSyAyy8qk-dByYiRsa6QNX0zFSLbB6TLgFro",
-    authDomain: "rfm-sv-online.firebaseapp.com",
-    projectId: "rfm-sv-online",
-    storageBucket: "rfm-sv-online.firebasestorage.app",
-    messagingSenderId: "31872922932",
-    appId: "1:31872922932:web:59d509972ecac9f86fe161",
-    databaseURL: "https://rfm-sv-online-default-rtdb.firebaseio.com"
-  };
 
-  window.RFM_FIREBASE_CONFIG = firebaseConfig;
-  window.RFM_FIREBASE_READY = false;
-
-  try {
-    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js");
-    const dbLib = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js");
-    const authLib = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js");
-
-    const app = initializeApp(firebaseConfig);
-    const db = dbLib.getDatabase(app);
-    const auth = authLib.getAuth(app);
-
-    window.RFM_FIREBASE_APP = app;
-    window.RFM_FIREBASE_DB = db;
-    window.RFM_FIREBASE_AUTH = auth;
-    window.RFM_DB = {
-      ref: dbLib.ref,
-      set: dbLib.set,
-      update: dbLib.update,
-      remove: dbLib.remove,
-      onValue: dbLib.onValue,
-      onDisconnect: dbLib.onDisconnect,
-      serverTimestamp: dbLib.serverTimestamp,
-      query: dbLib.query,
-      orderByChild: dbLib.orderByChild,
-      limitToLast: dbLib.limitToLast
-    };
-    window.RFM_AUTH = {
-      signInAnonymously: authLib.signInAnonymously,
-      onAuthStateChanged: authLib.onAuthStateChanged
-    };
-
-    try {
-      await authLib.signInAnonymously(auth);
-    } catch (authError) {
-      // If anonymous auth is not enabled, presence can still try with local id if rules allow it.
-      console.warn("Firebase Auth anónimo no disponible; se usará ID local si reglas lo permiten.", authError);
-    }
-
-    window.RFM_FIREBASE_READY = true;
-    window.dispatchEvent(new CustomEvent('rfm-firebase-ready'));
-    console.log("RFM Firebase inicializado");
-  } catch (error) {
-    window.RFM_FIREBASE_ERROR = String(error && (error.message || error));
-    console.warn("Firebase no disponible; se continúa en modo local/offline.", error);
-  }
-</script>
-<!-- /Firebase bootstrap -->
-
-<script src="avatar3d.js"></script>
-<script src="modo-presidente.js"></script>
-<script src="seleccion.js"></script>
-<script src="retos.js"></script>
-<script src="economia.js"></script>
-<script src="embajador.js"></script>
-<script src="finanzas.js"></script>
-<script src="logros80.js"></script>
-<script src="planteles.js"></script>
-<script src="regional.js"></script>
-<script src="legado.js"></script>
-<script src="liga-gt.js"></script>
-<script src="liga-hn.js"></script>
-<script src="liga-cr.js"></script>
-<script src="liga-pa.js"></script>
-<script src="liga-ni.js"></script>
-<script>
 "use strict";
 /* =========================================================================
    RETRO FOOTBALL MANAGER SV v2 — MODO CARRERA (monolito HTML)
@@ -2991,6 +2993,13 @@ function renderDashboard(){
   if (zbPanel) {
     zbPanel.innerHTML = renderZeroBytePanel();
     zbPanel.style.display = (typeof isLiveRunning === 'function' && isLiveRunning()) ? 'none' : 'block';
+  }
+  // Panel de anuncios recompensados: solo Dashboard, oculto si hay partido en vivo.
+  const adPanel = $('ad-panel');
+  if (adPanel) {
+    const showAds = !(typeof isLiveRunning === 'function' && isLiveRunning());
+    adPanel.innerHTML = showAds ? renderAdPanel() : '';
+    adPanel.style.display = showAds ? 'block' : 'none';
   }
 }
 function userNextMatch(){
