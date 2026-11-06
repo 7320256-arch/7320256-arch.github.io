@@ -209,7 +209,7 @@ self.addEventListener('fetch', event => {
   // Si los bloqueamos, los anuncios no se muestran y no se generan ingresos.
   try {
     const url = new URL(request.url);
-    const AD_HOSTS = ['3nbf4.com','propellerads.com','hilltopads.com','exoclick.com','adsterra.com','googleadservices.com','doubleclick.net'];
+    const AD_HOSTS = ['3nbf4.com','al5sm.com','propellerads.com','hilltopads.com','exoclick.com','adsterra.com','googleadservices.com','doubleclick.net'];
     if (AD_HOSTS.some(h => url.hostname === h || url.hostname.endsWith('.' + h))) {
       return; // dejar que la red.handle normal lo sirva
     }

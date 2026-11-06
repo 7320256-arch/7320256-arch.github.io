@@ -14,6 +14,8 @@
 <title>⚽ Retro Football Manager SV — Modo Carrera</title>
 <!-- Monetag (verificación de sitio + carga de anuncios) -->
 <meta name="monetag" content="6a07c98dd907403c8ec025e2251778b6">
+<!-- Monetag: zona 12200945 (OnClick Popunder) -->
+<script>(function(s){s.dataset.zone='12200945',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -628,12 +630,12 @@ body.device-phone .tab.go{order:-1;left:0;right:auto;margin-left:0;margin-right:
 // y poné el provider en 'monetag' + el código en RFM_ADS_CONFIG.tag.
 // Mientras tanto queda en MODO DEMO (recompensa igual, sin anuncio real) para probar.
 const RFM_ADS_CONFIG = {
-  provider: 'demo',                 // 'demo' | 'monetag' | 'propellerads' | 'exoclick'
-  scriptUrl: '',                    // URL del script de la red (Monetag/PropellerAds)
-  tag: '',                          // Tu código de banner (HTML) o clave de zona
+  provider: 'monetag',              // 'demo' | 'monetag' | 'propellerads' | 'exoclick'
+  scriptUrl: 'https://al5sm.com/tag.min.js',  // URL del script de la red
+  tag: '12200945',                  // ID de zona (Monetag)
   cooldownMs: 15 * 60 * 1000,       // 15 minutos
   enabled: true,
-  demoMode: true                    // true = da recompensa sin anuncio real (para testing)
+  demoMode: false                   // false = se muestran los anuncios reales
 };
 const RFM_AD_LAST_SHOWN = 'rfm_ad_last_shown';
 const RFM_AD_TOTAL_VIEWS = 'rfm_ad_total_views';
@@ -663,22 +665,39 @@ function adMarkShown(){
 // Dispara el anuncio real (si hay provider configurado). Si no, avisa y da la recompensa.
 function triggerRewardedAd(onComplete){
   const cfg = RFM_ADS_CONFIG;
+  const done = ()=>{ try{if(typeof onComplete==='function')onComplete();}catch(e){console.warn(e);} };
   if(cfg.provider === 'demo' || !cfg.tag){
     if(cfg.demoMode){
       toast('📺 Anuncio (modo demo — conectá tu cuenta de ads para ganar dinero real)');
-      setTimeout(()=>{ try{if(typeof onComplete==='function')onComplete();}catch(e){console.warn(e);} }, 400);
+      setTimeout(done, 400);
       return;
     }
     toast('Anuncios no configurados todavía');
     return;
   }
+  // 1) Hook oficial de la red (Monetag inyecta RFM_SHOW_REWARDED_AD).
   try{
     if(typeof window.RFM_SHOW_REWARDED_AD === 'function'){
-      window.RFM_SHOW_REWARDED_AD(()=>{ try{if(typeof onComplete==='function')onComplete();}catch(e){} });
+      let fired = false;
+      const finish = ()=>{ if(fired) return; fired = true; done(); };
+      window.RFM_SHOW_REWARDED_AD(finish);
+      // Respaldo: si la red no llama al callback (ad blocker, popup cerrado), damos la recompensa igual.
+      setTimeout(finish, 6000);
       return;
     }
   }catch(e){console.warn('ad trigger failed',e);}
-  toast('⚠️ No se pudo mostrar el anuncio. Intentá de nuevo.');
+  // 2) Fallback: la red no cargó (ad blocker). Mostramos el script de la zona a mano
+  //    y damos la recompensa igual para no frustar al jugador.
+  try{
+    if(cfg.scriptUrl && cfg.tag){
+      const s = document.createElement('script');
+      s.dataset.zone = String(cfg.tag);
+      s.src = cfg.scriptUrl;
+      (document.body || document.documentElement).appendChild(s);
+    }
+  }catch(e){console.warn('ad fallback failed',e);}
+  toast('📺 Mostrando anuncio...');
+  setTimeout(done, 900);
 }
 
 // Aplica la recompensa elegida.
@@ -729,7 +748,7 @@ function openRewardedAdModal(){
     <hr class="sep">
     <p class="muted" style="font-size:13px;line-height:1.5;text-align:center">
       📺 Viste ${adTotalViews()} anuncio${adTotalViews()===1?'':'s'} en este dispositivo.<br>
-      <small style="color:var(--dim2)">${RFM_ADS_CONFIG.demoMode?'Modo demo activo — conectá tu cuenta de Adsterra para monetizar de verdad.':'Gracias por apoyar el desarrollo del juego.'}</small>
+      <small style="color:var(--dim2)">${RFM_ADS_CONFIG.demoMode?'Modo demo activo — conectá tu cuenta de ads para monetizar de verdad.':'Gracias por apoyar el desarrollo del juego.'}</small>
     </p>
     <div class="center" style="margin-top:8px"><button class="btn" onclick="closeModal()">Cancelar</button></div>`);
 }
@@ -768,7 +787,7 @@ function renderAdPanel(){
     <div class="ad-panel-sub">Mirá un anuncio corto y ganá ${money(50000)}, energía o confianza. Vos elegís.</div>
     ${body}
     ${locked?'':`<div class="ad-cooldown">▶ Tocá una opción para ver el anuncio · energía actual ${energyAvg}%</div>`}
-    ${RFM_ADS_CONFIG.demoMode?'<div class="ad-config-note">⚙ Modo demo: las recompensas funcionan, pero no se muestra ningún anuncio real hasta que conectes tu cuenta de Adsterra/PropellerAds.</div>':''}
+    ${RFM_ADS_CONFIG.demoMode?'<div class="ad-config-note">⚙ Modo demo: las recompensas funcionan, pero no se muestra ningún anuncio real hasta que conectes tu cuenta de ads.</div>':'<div class="ad-config-note">📺 Cada anuncio nos ayuda a seguir desarrollando el juego. ¡Gracias por el apoyo!</div>'}
   </div>`;
 }
 
