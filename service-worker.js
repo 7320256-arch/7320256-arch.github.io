@@ -3,7 +3,7 @@ const CACHE_VERSION = 'rfm-sv-pwabuilder-safe-v7-fmsv';
 const MUSIC_CACHE = 'rfm-music-offline-v4';
 const INTRO_CACHE = 'rfm-intro-offline-v1';
 const AVATAR_CACHE = 'rfm-avatar-3d-v1';
-const SCOPE_PATH = '/fm-sv/';
+const SCOPE_PATH = '/';
 
 const APP_SHELL = [
   SCOPE_PATH,
@@ -209,7 +209,7 @@ self.addEventListener('fetch', event => {
   // Si los bloqueamos, los anuncios no se muestran y no se generan ingresos.
   try {
     const url = new URL(request.url);
-    const AD_HOSTS = ['3nbf4.com','al5sm.com','propellerads.com','hilltopads.com','exoclick.com','adsterra.com','googleadservices.com','doubleclick.net'];
+    const AD_HOSTS = ['3nbf4.com','al5sm.com','quge5.com','5gvci.com','6opo.com','auqot.com','ekhay.com','b3mny.com','094kk.com','jmosl.com','my.rtmark.net','propellerads.com','hilltopads.com','exoclick.com','adsterra.com','googleadservices.com','doubleclick.net'];
     if (AD_HOSTS.some(h => url.hostname === h || url.hostname.endsWith('.' + h))) {
       return; // dejar que la red.handle normal lo sirva
     }

@@ -4,18 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#070b07">
-<link rel="manifest" href="/fm-sv/manifest.json">
+<link rel="manifest" href="/manifest.json">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FM El Salvador">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="application-name" content="Retro Football Manager SV">
-<link rel="icon" type="image/png" sizes="512x512" href="/fm-sv/icon-v3-512.png">
-<link rel="apple-touch-icon" href="/fm-sv/icon-v3-512.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-v3-512.png">
+<link rel="apple-touch-icon" href="/icon-v3-512.png">
 <title>⚽ Retro Football Manager SV — Modo Carrera</title>
 <!-- Monetag (verificación de sitio + carga de anuncios) -->
 <meta name="monetag" content="6a07c98dd907403c8ec025e2251778b6">
 <!-- Monetag: zona 12200945 (OnClick Popunder) -->
-<script>(function(s){s.dataset.zone='12200945',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+<script src="https://quge5.com/88/tag.min.js" data-zone="307709" async data-cfasync="false"></script>
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -401,6 +401,17 @@ body.device-phone .tab.go{order:-1;left:0;right:auto;margin-left:0;margin-right:
 .ad-cooldown{font-family:var(--font-pixel);font-size:8px;color:var(--dim);text-align:center;margin-top:7px;letter-spacing:.5px}
 .ad-note{font-size:11px;color:var(--dim2);text-align:center;margin-top:6px;font-style:italic;line-height:1.4}
 .ad-config-note{font-size:11px;color:var(--amber);background:rgba(255,204,51,.08);border:1px solid var(--amber-d);border-radius:4px;padding:6px 8px;margin-top:7px;line-height:1.4}
+/* Overlay de "anuncio en curso" — no bloquea el juego, solo informa */
+.rfm-ad-ov{position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;background:rgba(3,8,4,.72);backdrop-filter:blur(2px);animation:fade .2s ease}
+.rfm-ad-card{background:var(--panel);border:2px solid var(--amber-d);border-radius:8px;padding:20px 26px;text-align:center;max-width:320px;box-shadow:0 0 30px rgba(255,204,51,.25)}
+.rfm-ad-tag{font-family:var(--font-pixel);font-size:9px;color:var(--amber);letter-spacing:1px;margin-bottom:10px;text-shadow:0 0 6px rgba(255,204,51,.4)}
+.rfm-ad-icon{font-size:44px;line-height:1;margin-bottom:10px;animation:rfm-pulse 1.1s ease-in-out infinite}
+@keyframes rfm-pulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.12);opacity:1}}
+.rfm-ad-txt{font-size:17px;color:var(--ink);line-height:1.4}
+.rfm-ad-txt small{color:var(--dim);font-size:14px}
+.rfm-ad-bar{margin-top:14px;height:6px;background:#10220f;border:1px solid var(--line2);border-radius:3px;overflow:hidden}
+.rfm-ad-bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--amber),var(--cyan));animation:rfm-fill 3.2s linear forwards}
+@keyframes rfm-fill{from{width:0}to{width:100%}}
 @media(max-width:780px){.ad-rewards{grid-template-columns:1fr}.ad-reward-btn{display:flex;align-items:center;gap:8px;text-align:left;padding:9px 10px}.ad-reward-btn .ic{font-size:20px;margin:0}.ad-reward-btn .ds{margin:0 0 0 auto}}
 </style>
 </head>
@@ -448,6 +459,7 @@ body.device-phone .tab.go{order:-1;left:0;right:auto;margin-left:0;margin-right:
     <div class="topbtns">
       <button class="btn btn-sm phone-only" onclick="openPhoneMenu()" title="Menú">☰</button><button class="btn btn-sm" onclick="toggleMusic()" title="Música ON/OFF">🎵</button><button class="btn btn-sm" onclick="nextMusicTrack(true)" title="Siguiente canción">⏭</button><button class="btn btn-sm" onclick="playIntroManually()" title="Ver intro de video">🎬</button><button class="btn btn-sm" onclick="toggleCRT()" title="Activar/desactivar CRT">CRT</button><button class="btn btn-sm" onclick="openHelpCenter()" title="Ayuda">?</button><button class="btn btn-sm" onclick="repairGame(true)" title="Reparar partida">🔧</button><button class="btn btn-sm" onclick="exportSave()" title="Descargar partida">⬇</button>
       <label class="btn btn-sm" title="Cargar partida">⬆<input type="file" accept=".json,application/json" id="imp-file" hidden onchange="importSave(event)"></label>
+      <button class="btn btn-sm btn-p" id="btn-install-app" onclick="openInstallMenu()" title="Instalar / Descargar el juego">📲</button>
       <button class="btn btn-sm btn-d" onclick="confirmNewGame()">⟳</button>
     </div>
   </header>
@@ -539,6 +551,14 @@ body.device-phone .tab.go{order:-1;left:0;right:auto;margin-left:0;margin-right:
 <div id="modal" class="modal hidden"><div class="modal-card" id="modal-card"></div></div>
 <div id="toast" class="toast hidden"></div>
 <div id="offline-indicator" class="offline-pill hidden">📡 Modo offline</div>
+<div id="rfm-ad-overlay" class="rfm-ad-ov hidden">
+  <div class="rfm-ad-card">
+    <div class="rfm-ad-tag">ANUNCIO</div>
+    <div class="rfm-ad-icon">📺</div>
+    <div class="rfm-ad-txt">Estás viendo un anuncio.<br><small>Tu recompensa llega en un momento.</small></div>
+    <div class="rfm-ad-bar"><i></i></div>
+  </div>
+</div>
 <audio id="bg-music" preload="auto" playsinline></audio>
 <div id="live-mini" class="live-mini hidden" onclick="switchView('partido')"></div>
 
@@ -631,8 +651,9 @@ body.device-phone .tab.go{order:-1;left:0;right:auto;margin-left:0;margin-right:
 // Mientras tanto queda en MODO DEMO (recompensa igual, sin anuncio real) para probar.
 const RFM_ADS_CONFIG = {
   provider: 'monetag',              // 'demo' | 'monetag' | 'propellerads' | 'exoclick'
-  scriptUrl: 'https://al5sm.com/tag.min.js',  // URL del script de la red
-  tag: '12200945',                  // ID de zona (Monetag)
+  scriptUrl: 'https://quge5.com/88/tag.min.js',  // Script Multitag (Monetag)
+  tag: '307709',                    // Zona del script Multitag
+  zoneId: '12221563',              // Zona principal Multitag (para el sw.js)
   cooldownMs: 15 * 60 * 1000,       // 15 minutos
   enabled: true,
   demoMode: false                   // false = se muestran los anuncios reales
@@ -675,25 +696,32 @@ function triggerRewardedAd(onComplete){
     toast('Anuncios no configurados todavía');
     return;
   }
-  // 1) Hook oficial de la red (Monetag inyecta RFM_SHOW_REWARDED_AD).
+  // 1) Hook oficial de la red (Monetag/SDK inyecta RFM_SHOW_REWARDED_AD).
+  //    Si existe, la recompensa se entrega cuando la red confirma que se mostró el ad.
   try{
     if(typeof window.RFM_SHOW_REWARDED_AD === 'function'){
       let fired = false;
       const finish = ()=>{ if(fired) return; fired = true; done(); };
       window.RFM_SHOW_REWARDED_AD(finish);
       // Respaldo: si la red no llama al callback (ad blocker, popup cerrado), damos la recompensa igual.
-      setTimeout(finish, 6000);
+      setTimeout(finish, 8000);
       return;
     }
   }catch(e){console.warn('ad trigger failed',e);}
-  // 2) Fallback: la red no cargó (ad blocker). Mostramos el script de la zona a mano
-  //    y damos la recompensa igual para no frustar al jugador.
+  // 2) Formato Multitag: el script ya está cargado en el <head> y se activa solo.
+  //    Para dar la sensación de "ver un anuncio" SIN molestar, mostramos un overlay
+  //    breve dentro del juego (con botón de saltar) y entregamos la recompensa al terminar.
   try{
-    if(cfg.scriptUrl && cfg.tag){
-      const s = document.createElement('script');
-      s.dataset.zone = String(cfg.tag);
-      s.src = cfg.scriptUrl;
-      (document.body || document.documentElement).appendChild(s);
+    if(cfg.scriptUrl){
+      const ov = document.getElementById('rfm-ad-overlay');
+      if(ov){
+        ov.classList.remove('hidden');
+        // el popunder/multitag puede abrirse en segundo plano: no bloqueamos el juego
+        setTimeout(()=>{ ov.classList.add('hidden'); done(); }, 3200);
+      }else{
+        toast('📺 Anuncio mostrado. ¡Gracias por el apoyo!');
+        setTimeout(done, 1200);
+      }
     }
   }catch(e){console.warn('ad fallback failed',e);}
   toast('📺 Mostrando anuncio...');
@@ -4223,13 +4251,13 @@ function boot(){
 function ensureManifestLink(){
   let link=document.querySelector('link[rel="manifest"]');
   if(!link){link=document.createElement('link');link.rel='manifest';document.head.appendChild(link);}
-  link.setAttribute('href','/fm-sv/manifest.json');
+  link.setAttribute('href','/manifest.json');
   return link.href;
 }
 function checkManifestForPWA(){
   try{
     ensureManifestLink();
-    fetch('/fm-sv/manifest.json',{cache:'no-store'})
+    fetch('/manifest.json',{cache:'no-store'})
       .then(r=>r.ok?r.json():Promise.reject(new Error('manifest '+r.status)))
       .then(m=>{window.RFM_MANIFEST_OK=!!(m&&m.name&&m.short_name);})
       .catch(e=>{window.RFM_MANIFEST_OK=false;console.warn('PWA manifest no detectado:',e);});
@@ -4240,7 +4268,7 @@ function registerOfflineSupport(){
   ensureManifestLink();checkManifestForPWA();
   updateOnlineIndicator();window.addEventListener('online',updateOnlineIndicator);window.addEventListener('offline',updateOnlineIndicator);
   if(navigator.serviceWorker&&navigator.serviceWorker.register){
-    navigator.serviceWorker.register('/fm-sv/service-worker.js',{scope:'/fm-sv/'}).then(reg=>{
+    navigator.serviceWorker.register('/service-worker.js',{scope:'/'}).then(reg=>{
       window.RFM_SW_OK=true;
       if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});
       reg.addEventListener('updatefound',()=>{const nw=reg.installing;if(nw)nw.addEventListener('statechange',()=>{if(nw.state==='installed'&&navigator.serviceWorker.controller)toast('Actualización descargada para uso offline');});});
@@ -4248,6 +4276,186 @@ function registerOfflineSupport(){
     }).then(()=>{try{navigator.serviceWorker.controller&&navigator.serviceWorker.controller.postMessage({type:'CACHE_NOW'});}catch(e){}}).catch(e=>{window.RFM_SW_OK=false;console.warn('Service Worker no registrado:',e);});
   }else{window.RFM_SW_OK=false;}
 }
+/* ═══════════════════════════════════════════════════════════
+   INSTALAR / DESCARGAR EL JUEGO
+   - Si el navegador soporta PWA (beforeinstallprompt) → botón "Instalar app"
+   - Si no lo soporta o el usuario lo cancela → botón "Descargar HTML"
+     que guarda una copia jugable del juego en el dispositivo.
+   ═══════════════════════════════════════════════════════════ */
+let RFM_INSTALL_PROMPT = null;
+
+function isAppInstalled(){
+  try{
+    if(window.matchMedia('(display-mode: standalone)').matches) return true;
+    if(window.navigator.standalone === true) return true;
+  }catch(e){}
+  return false;
+}
+
+function initInstallPrompt(){
+  const getBtn = ()=>document.getElementById('btn-install-app');
+  const syncBtn = ()=>{
+    const btn = getBtn();
+    if(!btn) return;
+    // Si ya está instalada como app, ocultamos el botón (no hay nada que hacer).
+    if(isAppInstalled()){ btn.style.display='none'; return; }
+    btn.style.display = '';
+  };
+  window.addEventListener('beforeinstallprompt', e=>{
+    try{ e.preventDefault(); }catch(err){}
+    RFM_INSTALL_PROMPT = e;
+    syncBtn();
+    try{ localStorage.setItem('rfm_install_available','1'); }catch(err){}
+  });
+  window.addEventListener('appinstalled', ()=>{
+    RFM_INSTALL_PROMPT = null;
+    const btn = getBtn(); if(btn) btn.style.display = 'none';
+    try{ localStorage.setItem('rfm_install_available','0'); }catch(err){}
+    toast('📲 ¡Juego instalado! Ahora lo jugás desde tu pantalla de inicio.');
+  });
+  // El botón siempre queda visible (ofrece instalar o descargar).
+  syncBtn();
+  setTimeout(syncBtn, 800);
+  setTimeout(syncBtn, 2000);
+}
+
+async function doInstallApp(){
+  try{
+    if(!RFM_INSTALL_PROMPT){
+      toast('📲 Tu navegador no permite instalar. Usá "Descargar HTML".');
+      openInstallMenu();
+      return;
+    }
+    RFM_INSTALL_PROMPT.prompt();
+    const res = await RFM_INSTALL_PROMPT.userChoice;
+    RFM_INSTALL_PROMPT = null;
+    try{ localStorage.setItem('rfm_install_available','0'); }catch(e){}
+    if(res && res.outcome === 'accepted') toast('📲 Instalando el juego...');
+    else toast('ℹ️ No se instaló. Podés usar "Descargar HTML" para tener una copia.');
+  }catch(e){
+    console.warn('install failed', e);
+    toast('📲 No se pudo instalar. Probá con "Descargar HTML".');
+  }
+}
+
+// Descarga una copia HTML autónoma y jugable del juego.
+function downloadGameHTML(){
+  try{
+    // Clonar el documento actual y limpiar lo que no debe ir en el archivo.
+    const clone = document.documentElement.cloneNode(true);
+    // Quitar overlays/modales abiertos
+    clone.querySelectorAll('.modal-back, .modal, #toast, .hidden').forEach(n=>{
+      if(n.id === 'toast') n.classList.add('hidden');
+    });
+    // Quitar inputs de archivo (no se pueden preservar)
+    clone.querySelectorAll('input[type=file]').forEach(n=>n.remove());
+    // Injectar un script que marque el archivo como copia local.
+    const marker = document.createElement('script');
+    marker.textContent = [
+      "window.RFM_LOCAL_COPY=true;",
+      "window.RFM_BUILD_COMPLETE=" + JSON.stringify(typeof BUILD_ID!=='undefined'?BUILD_ID:'1.6-full') + ";",
+      "try{if(typeof RFM_ADS_CONFIG!=='undefined'){RFM_ADS_CONFIG.provider='demo';RFM_ADS_CONFIG.demoMode=true;RFM_ADS_CONFIG.enabled=false;}}catch(e){}"
+    ].join('');
+    const head = clone.querySelector('head') || clone;
+    head.appendChild(marker);
+    // Quitar los scripts externos de monetag (no funcionan sin conexión y no queremos facturar desde una copia)
+    // y el de model-viewer (requiere CDN).
+    // IMPORTANTE: el clone se hace del DOM ya ejecutado, así que la red de ads puede haber
+    // inyectado tags <script> adicionales. Por eso limpiamos el clone por nodos (no solo por regex).
+    try{
+      const BAD = ['al5sm.com','quge5.com','3nbf4.com','auqot.com','ekhay.com','b3mny.com','5gvci.com','6opo.com','094kk.com','jmosl.com','rtmark.net','model-viewer'];
+      clone.querySelectorAll('script').forEach(s=>{
+        const src = (s.getAttribute('src')||'');
+        const ds  = (s.getAttribute('data-sdk')||'') + ' ' + (s.getAttribute('data-zone')||'') + ' ' + (s.getAttribute('data-zone-id')||'');
+        const txt = (s.textContent||'').slice(0,300);
+        if(BAD.some(b=>src.indexOf(b)>=0 || ds.indexOf(b)>=0 || txt.indexOf(b)>=0)){
+          s.remove();
+        }
+      });
+      // También quitar <link> y <iframe> de ads
+      clone.querySelectorAll('link,iframe').forEach(n=>{
+        const u=(n.getAttribute('href')||'')+(n.getAttribute('src')||'');
+        if(BAD.some(b=>u.indexOf(b)>=0)) n.remove();
+      });
+    }catch(e){ console.warn('limpieza ads falló', e); }
+    // Serializar DESPUÉS de limpiar los nodos (importante: el clone ya traía los tags de ads).
+    let html = '<!DOCTYPE html>\n' + clone.outerHTML;
+    // Variante: scripts con contenido inline (el de al5sm es inline)
+    html = html.replace(/<script\b[^>]*>\s*\(function\(s\)\{s\.dataset\.zone[\s\S]*?<\/script>/gi,'');
+    // Quitar el service worker (solo funciona en servidor).
+    // Se elimina la cadena completa register(...).then(...).catch(...) con paréntesis balanceados.
+    // Nota: el texto buscado se arma por partes para que esta función no se auto-reemplace al clonar.
+    html = (function(src){
+      const N1 = 'navigator.serviceWorker';
+      const N2 = '.register';
+      let out = '', i = 0;
+      while(true){
+        const k = src.indexOf(N1 + N2 + '(', i);
+        if(k < 0){ out += src.slice(i); break; }
+        out += src.slice(i, k);
+        let d = 0, j = k + N1.length + N2.length, end = -1;
+        for(; j < src.length; j++){
+          const c = src[j];
+          if(c === '(') d++;
+          else if(c === ')'){ d--; if(d === 0){ end = j; break; } }
+        }
+        if(end < 0){ out += src.slice(k); break; }
+        // Si viene encadenado con .then(...) / .catch(...), eliminarlos también.
+        let tail = end + 1;
+        for(let guard=0; guard<4; guard++){
+          const m = /^\s*\.(then|catch|finally)\s*\(/.exec(src.slice(tail));
+          if(!m) break;
+          let dd = 0, jj = tail + m[0].length - 1, e2 = -1;
+          for(; jj < src.length; jj++){
+            const c = src[jj];
+            if(c === '(') dd++;
+            else if(c === ')'){ dd--; if(dd === 0){ e2 = jj; break; } }
+          }
+          if(e2 < 0) break;
+          tail = e2 + 1;
+        }
+        if(src[tail] === ';') tail++;
+        out += '/* SW off en copia local */';
+        i = tail;
+      }
+      return out;
+    })(html);
+    const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Retro-Football-Manager-SV.html';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1500);
+    toast('⬇️ Copia descargada. Abrila con doble clic para jugar.');
+  }catch(e){
+    console.error(e);
+    toast('⚠️ No se pudo descargar la copia.');
+  }
+}
+
+// Descarga un archivo .zip-friendly con el HTML (alias claro)
+function openInstallMenu(){
+  const installed = isAppInstalled();
+  const canPrompt = !!RFM_INSTALL_PROMPT;
+  const body = `
+    <div class="panel-title" style="font-size:10px">📲 Instalar o descargar el juego</div>
+    <p class="muted" style="font-size:14px">${installed
+      ? '<b class="green">Ya lo tenés instalado.</b> Abrilo desde tu pantalla de inicio.'
+      : 'Elegí cómo querés llevar el juego a tu dispositivo.'}</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+      <button class="btn btn-p" onclick="closeModal();doInstallApp();">
+        ${installed?'📲 Reabrir la app':(canPrompt?'📲 Instalar como app (recomendado)':'📲 Instalar como app')}
+      </button>
+      <button class="btn" onclick="closeModal();downloadGameHTML();">⬇️ Descargar copia HTML jugable</button>
+      <button class="btn" onclick="closeModal();openHelpCenter();">❓ ¿Cómo se instala en mi celular?</button>
+    </div>
+    <p class="muted" style="font-size:13px;margin-top:10px">La copia HTML se guarda en tu dispositivo y se abre con doble clic. Sirve como respaldo si no podés instalar la app.</p>
+    <div class="center" style="margin-top:10px"><button class="btn btn-sm" onclick="closeModal()">Cerrar</button></div>`;
+  openModal(body);
+}
+
 window.RFM_BUILD_COMPLETE=BUILD_ID;
 console.log('RFM build completo', window.RFM_BUILD_COMPLETE);
 window.addEventListener('beforeunload',autoSave);
@@ -4255,6 +4463,7 @@ window.addEventListener('pagehide',autoSave);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')autoSave();});
 installErrorGuard();
 registerOfflineSupport();
+initInstallPrompt();
 boot();
 // Watchdog: si después de 6s Firebase no se inicializó (por bloqueo CSP, sin red, etc),
 // forzamos el estado "offline visual" para que el indicador no quede en "---".
