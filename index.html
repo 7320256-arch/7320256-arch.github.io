@@ -457,9 +457,9 @@ body.device-phone .tab.go{order:-1;left:0;right:auto;margin-left:0;margin-right:
       <div class="stat"><div class="k">Online</div><div id="hd-online" class="v green">—</div></div>
     </div>
     <div class="topbtns">
+      <button class="btn btn-sm btn-p" id="btn-install-app" onclick="openInstallMenu()" title="Instalar o descargar el juego">📲</button>
       <button class="btn btn-sm phone-only" onclick="openPhoneMenu()" title="Menú">☰</button><button class="btn btn-sm" onclick="toggleMusic()" title="Música ON/OFF">🎵</button><button class="btn btn-sm" onclick="nextMusicTrack(true)" title="Siguiente canción">⏭</button><button class="btn btn-sm" onclick="playIntroManually()" title="Ver intro de video">🎬</button><button class="btn btn-sm" onclick="toggleCRT()" title="Activar/desactivar CRT">CRT</button><button class="btn btn-sm" onclick="openHelpCenter()" title="Ayuda">?</button><button class="btn btn-sm" onclick="repairGame(true)" title="Reparar partida">🔧</button><button class="btn btn-sm" onclick="exportSave()" title="Descargar partida">⬇</button>
       <label class="btn btn-sm" title="Cargar partida">⬆<input type="file" accept=".json,application/json" id="imp-file" hidden onchange="importSave(event)"></label>
-      <button class="btn btn-sm btn-p" id="btn-install-app" onclick="openInstallMenu()" title="Instalar / Descargar el juego">📲</button>
       <button class="btn btn-sm btn-d" onclick="confirmNewGame()">⟳</button>
     </div>
   </header>
@@ -656,8 +656,101 @@ const RFM_ADS_CONFIG = {
   zoneId: '12221563',              // Zona principal Multitag (para el sw.js)
   cooldownMs: 15 * 60 * 1000,       // 15 minutos
   enabled: true,
-  demoMode: false                   // false = se muestran los anuncios reales
+  demoMode: false,                  // false = se muestran los anuncios reales
+  // ⛔ Desactivar el popunder "OnClick": abre una pestaña con CADA click y rompe el juego.
+  // Se hace interceptando la respuesta JSON de la red: si no trae "onclick", no hay popunder.
+  // Los demás formatos (Push, In-Page, Vignette) siguen funcionando.
+  blockPopunder: true
 };
+
+/* ⛔ Desactivador de popunder (Monetag Multitag).
+   El tag pide al servidor la lista de formatos; si la respuesta incluye "onclick",
+   se registra un listener que abre un popup con cada click del usuario.
+   Interceptamos la respuesta y le quitamos ese campo: el resto de formatos sigue igual. */
+(function rfmBlockPopunder(){
+  if(typeof RFM_ADS_CONFIG==='undefined' || !RFM_ADS_CONFIG.blockPopunder) return;
+  const stripOnclick = (obj)=>{
+    if(obj && typeof obj==='object'){
+      try{ if('onclick' in obj) delete obj.onclick; }catch(e){}
+    }
+    return obj;
+  };
+  // 1) Interceptar fetch
+  try{
+    const origFetch = window.fetch;
+    if(origFetch && !origFetch.__rfm_patched){
+      const patched = function(input, init){
+        const p = origFetch.call(this, input, init);
+        try{
+          const url = (typeof input==='string')?input:(input&&input.url)||'';
+          if(/\/88\/|\/act\/|tag\.min\.js/i.test(url)){
+            return p.then(res=>{
+              try{
+                if(!res.ok) return res;
+                return res.clone().json().then(j=>{
+                  stripOnclick(j);
+                  const txt = JSON.stringify(j);
+                  return new Response(txt,{status:res.status,statusText:res.statusText,headers:res.headers});
+                }).catch(()=>res);
+              }catch(e){ return res; }
+            });
+          }
+        }catch(e){}
+        return p;
+      };
+      patched.__rfm_patched = true;
+      window.fetch = patched;
+    }
+  }catch(e){ console.warn('rfm: no se pudo parchear fetch', e); }
+  // 2) Interceptar XHR
+  try{
+    const XO = XMLHttpRequest.prototype.open;
+    const XS = XMLHttpRequest.prototype.send;
+    if(XO && !XO.__rfm_patched){
+      const patchedOpen = function(method, url){
+        this.__rfm_url = String(url||'');
+        return XO.apply(this, arguments);
+      };
+      patchedOpen.__rfm_patched = true;
+      XMLHttpRequest.prototype.open = patchedOpen;
+      const patchedSend = function(){
+        try{
+          if(/\/88\/|\/act\/|tag\.min\.js/i.test(this.__rfm_url||'')){
+            this.addEventListener('load', function(){
+              try{
+                if(this.responseType && this.responseType!=='text') return;
+                const j = JSON.parse(this.responseText);
+                if(j && typeof j==='object' && 'onclick' in j){
+                  delete j.onclick;
+                  Object.defineProperty(this,'responseText',{value:JSON.stringify(j),configurable:true});
+                  try{ Object.defineProperty(this,'response',{value:j,configurable:true}); }catch(e2){}
+                }
+              }catch(e){}
+            });
+          }
+        }catch(e){}
+        return XS.apply(this, arguments);
+      };
+      XMLHttpRequest.prototype.send = patchedSend;
+    }
+  }catch(e){ console.warn('rfm: no se pudo parchear XHR', e); }
+  // 3) Red de seguridad: si aun así se registra un onclick que abre popup, lo neutralizamos.
+  try{
+    const origOpen = window.open;
+    if(origOpen && !origOpen.__rfm_patched){
+      const patched = function(url, target, features){
+        // Permitimos abrir solo si el jugador pidió explícitamente ver un anuncio.
+        if(!window.__RFM_AD_ALLOWED){
+          console.log('[RFM] popunder bloqueado (no solicitado por el jugador)');
+          return null;
+        }
+        return origOpen.apply(this, arguments);
+      };
+      patched.__rfm_patched = true;
+      window.open = patched;
+    }
+  }catch(e){}
+})();
 const RFM_AD_LAST_SHOWN = 'rfm_ad_last_shown';
 const RFM_AD_TOTAL_VIEWS = 'rfm_ad_total_views';
 
@@ -708,15 +801,15 @@ function triggerRewardedAd(onComplete){
       return;
     }
   }catch(e){console.warn('ad trigger failed',e);}
-  // 2) Formato Multitag: el script ya está cargado en el <head> y se activa solo.
-  //    Para dar la sensación de "ver un anuncio" SIN molestar, mostramos un overlay
-  //    breve dentro del juego (con botón de saltar) y entregamos la recompensa al terminar.
+  // 2) Formato Multitag: el script ya está cargado en el <head>.
+  //    Mostramos un overlay breve dentro del juego (NO molesta, no bloquea) y
+  //    entregamos la recompensa al terminar. El popunder "OnClick" está bloqueado
+  //    globalmente (ver rfmBlockPopunder), así que no se abren pestanas al azar.
   try{
     if(cfg.scriptUrl){
       const ov = document.getElementById('rfm-ad-overlay');
       if(ov){
         ov.classList.remove('hidden');
-        // el popunder/multitag puede abrirse en segundo plano: no bloqueamos el juego
         setTimeout(()=>{ ov.classList.add('hidden'); done(); }, 3200);
       }else{
         toast('📺 Anuncio mostrado. ¡Gracias por el apoyo!');
